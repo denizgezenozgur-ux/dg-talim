@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gemi Talim Planlayıcı</title>
+<meta name="theme-color" content="#8B192C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="DG Talim">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+</head>
+<body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow working column like a logbook page; inputs on top, generated record below, copy bar pinned to the bottom edge. */
+:root{
+  --bg:#EAEFF1; --surface:#FFFFFF; --ink:#13263A; --muted:#5A6B7B; --line:#C9D3DA;
+  --orange:#8B192C; --orange-soft:#F7E4E7; --navy:#1C3D5A; --ok:#2F7A4F;
+  --f-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1620; --surface:#12202D; --ink:#E3EAF0; --muted:#94A5B4; --line:#253849;
+  --orange:#FD8D1E; --orange-soft:#3A2414; --navy:#9EC4E6; --ok:#6CC594; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1620; --surface:#12202D; --ink:#E3EAF0; --muted:#94A5B4; --line:#253849;
+  --orange:#FD8D1E; --orange-soft:#3A2414; --navy:#9EC4E6; --ok:#6CC594; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:780px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 120px;display:flex;flex-direction:column;gap:18px}
+header{display:flex;flex-direction:column;gap:2px}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.brand img{border-radius:10px;flex:none}
+.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange)}
+h1{font-family:var(--f-display);font-weight:700;font-size:34px;line-height:1;margin:0;letter-spacing:.01em;text-wrap:balance}
+.sub{color:var(--muted);font-size:13px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;border:1.5px solid var(--ink);border-radius:6px;overflow:hidden}
+.tabs button{font-family:var(--f-display);font-size:19px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:10px;border:0;background:var(--surface);color:var(--ink);cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:460px){.row{grid-template-columns:1fr 1fr}.row .full{grid-column:1/-1}.row2{grid-template-columns:1fr}}
+label{display:flex;flex-direction:column;gap:4px;font-size:11px;font-family:var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);min-width:0}
+input,select,textarea{font:inherit;font-family:var(--f-body);font-size:15px;letter-spacing:0;text-transform:none;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:9px 10px;width:100%;min-width:0}
+textarea{min-height:64px;resize:vertical}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+details summary{cursor:pointer;font-weight:600;font-size:14px}
+details[open] summary{margin-bottom:12px}
+.sectionlabel{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:7px 12px;font-size:14px;cursor:pointer;display:inline-flex;gap:8px;align-items:center}
+.chip .fq{font-family:var(--f-mono);font-size:10px;letter-spacing:.06em;padding:1px 6px;border-radius:4px;background:var(--line);color:var(--ink)}
+.chip[aria-pressed="true"]{border-color:var(--orange);background:var(--orange-soft)}
+.chip[aria-pressed="true"] .fq{background:var(--orange);color:var(--bg)}
+.note{font-size:13px;color:var(--muted)}
+.warn{font-size:13px;border-left:3px solid var(--orange);padding:6px 10px;background:var(--orange-soft);border-radius:0 6px 6px 0}
+.check{flex-direction:row;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-family:var(--f-body);font-size:14px;color:var(--ink)}
+.check input{width:auto}
+/* record */
+.record{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--orange);border-radius:8px;padding:18px 16px;display:flex;flex-direction:column;gap:16px}
+.rhead{display:flex;flex-direction:column;gap:6px}
+.rtitle{font-family:var(--f-display);font-size:26px;font-weight:700;line-height:1.05;margin:0}
+.rtitle span{display:block;font-size:17px;color:var(--muted);font-weight:600}
+.meta{display:flex;flex-wrap:wrap;gap:6px 16px;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.meta b{color:var(--ink);font-weight:500}
+.bi{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:600px){.bi{grid-template-columns:1fr}}
+.bi p{margin:0;min-width:0}
+.lang{font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;color:var(--orange);margin-right:6px}
+.tl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.tl li{display:grid;grid-template-columns:58px minmax(0,1fr);gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.tl li:first-child{border-top:0}
+.tl time{font-family:var(--f-mono);font-size:15px;color:var(--orange);font-variant-numeric:tabular-nums;padding-top:1px}
+.tl .en{font-weight:500}
+.tl .tr{color:var(--muted);font-size:14px;margin-top:3px}
+.copybar{position:fixed;left:0;right:0;bottom:0;background:var(--ink);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:10px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:5}
+.copybar .in{max-width:780px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px}
+.copybar button{font-family:var(--f-display);font-size:17px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;border:0;border-radius:6px;padding:11px 8px;cursor:pointer;background:var(--bg);color:var(--ink)}
+.copybar button.main{background:var(--orange);color:var(--bg)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));background:var(--ok);color:#fff;padding:8px 16px;border-radius:999px;font-size:14px;z-index:6}
+#fallback{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12px}
+@media (prefers-reduced-motion:no-preference){.chip,.tabs button{transition:background .15s,border-color .15s}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand"><img src="icons/icon-192.png" alt="" width="44" height="44" id="logo"><div class="eyebrow" id="shipEyebrow">ISM · SOLAS III/19</div></div>
+    <h1>Talim &amp; Eğitim Planlayıcı</h1>
+    <div class="sub">Tarih ve saat aralığını gir; o haftanın talimi veya eğitimi İngilizce–Türkçe hazırlanır, ISM formuna kopyalanır.</div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tabDrill" aria-selected="true">Talim · Drill</button>
+    <button role="tab" id="tabTrain" aria-selected="false">Eğitim · Training</button>
+  </div>
+
+  <section class="panel">
+    <div class="row">
+      <label class="full">Tarih<input type="date" id="date"></label>
+      <label>Başlangıç<input type="time" id="start" value="10:00"></label>
+      <label>Bitiş<input type="time" id="end" value="10:45"></label>
+    </div>
+    <div class="note" id="weekInfo"></div>
+    <details id="shipDetails">
+      <summary>Gemi bilgileri (isteğe bağlı)</summary>
+      <div class="row2">
+        <label>Gemi adı<input id="ship" placeholder="M/V ..."></label>
+        <label>Yöneten (rütbe / ad)<input id="cond" placeholder="C/O ..."></label>
+        <label>Mevki<input id="pos" placeholder="40°58'N 028°50'E / Limanda"></label>
+        <label>Hava / Deniz<input id="wx" placeholder="NW 4, deniz 3, açık"></label>
+      </div>
+    </details>
+  </section>
+
+  <section class="panel" id="drillPanel">
+    <div class="sectionlabel" id="monthLabel">Bu ayın talimleri</div>
+    <div class="chips" id="monthChips"></div>
+    <label>Diğer talim seç<select id="drillSel"></select></label>
+    <div id="drillOpts"></div>
+  </section>
+
+  <section class="panel" id="trainPanel" hidden>
+    <div class="sectionlabel">Bu haftanın eğitimi</div>
+    <label>Eğitim konusu<select id="topicSel"></select></label>
+    <div class="note" id="topicNote"></div>
+  </section>
+
+  <label>Ek not (kayda eklenir)<textarea id="extra" placeholder="Örn: Yeni katılan 2 personel ilk kez katıldı."></textarea></label>
+
+  <article class="record" id="record" aria-live="polite"></article>
+  <textarea id="fallback" hidden readonly></textarea>
+</div>
+
+<div class="copybar"><div class="in">
+  <button class="main" id="cpBoth">Kopyala EN+TR</button>
+  <button id="cpEn">EN</button>
+  <button id="cpTr">TR</button>
+</div></div>
+<div class="toast" id="toast" hidden>Kopyalandı</div>
+
+<script>
+const T=(en,tr)=>({en,tr});
+const S=(w,en,tr)=>({w,en,tr});
+const pick=(a,i)=>a[((i%a.length)+a.length)%a.length];
+const MONTHS_TR=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+const MONTHS_EN=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const ALL=[0,1,2,3,4,5,6,7,8,9,10,11];
+
+/* ---------------- FIRE ---------------- */
+const FIRE_AREAS=[
+{n:T("Cargo Holds","Ambarlar"),
+ locs:[T("No.1 Cargo Hold","1 No.lu Ambar"),T("No.2 Cargo Hold","2 No.lu Ambar"),T("No.3 Cargo Hold","3 No.lu Ambar"),T("No.4 Cargo Hold","4 No.lu Ambar"),T("No.5 Cargo Hold","5 No.lu Ambar"),T("No.3 Hold, hatch cover hydraulic area","3 No.lu Ambar, ambar kapağı hidrolik bölgesi"),T("No.2 Hold, bilge well area","2 No.lu Ambar, sintine kuyusu bölgesi"),T("No.4 Hold, tank top","4 No.lu Ambar, tank üstü"),T("No.1 Hold, forward bulkhead","1 No.lu Ambar, baş perde"),T("No.5 Hold, aft access trunk","5 No.lu Ambar, kıç giriş kuyusu"),T("No.2 Hold, ventilation trunk","2 No.lu Ambar, havalandırma kanalı"),T("No.4 Hold, access hatch","4 No.lu Ambar, giriş kapağı"),T("No.3 Hold, topside tank area","3 No.lu Ambar, üst yan tank bölgesi"),T("No.1 Hold, hatch coaming area","1 No.lu Ambar, mezarna bölgesi")],
+ causes:[T("self-heating of cargo","yükün kendiliğinden ısınması"),T("hot work spark near the ventilator","havalandırma yakınında sıcak çalışma kıvılcımı"),T("electrical fault in hold lighting","ambar aydınlatmasında elektrik arızası"),T("hydraulic oil leak onto a hot surface","sıcak yüzeye hidrolik yağ sızıntısı"),T("discarded cigarette","atılan sigara izmariti")],
+ finders:[T("The duty AB, sent after the smoke detection alarm on the bridge,","Köprüüstündeki duman dedektör alarmı üzerine gönderilen vardiya usta gemicisi"),T("The Bosun during his deck round","Güverte turundaki Lostromo"),T("The 3/O on fire patrol","Yangın devriyesindeki 3. Zabit")],
+ isolate:T("Ventilators, vent flaps and access hatches of the hold closed and sealed; hold fans stopped, electrical supply to hold lighting isolated. Hatch covers kept CLOSED, the hold is not opened.","Ambarın vantilatörleri, havalandırma klapeleri ve giriş kapakları kapatılıp sızdırmaz hale getirilir; ambar fanları durdurulur, ambar aydınlatmasının elektriği kesilir. Ambar kapakları KAPALI tutulur, ambar açılmaz."),
+ attack:T("Boundary cooling of hatch covers, coamings and adjacent bulkheads continued; temperatures checked every 15 minutes. Fixed CO2 system for the hold prepared: CO2 room manned, number of cylinders for this hold confirmed from the posted instructions. Release SIMULATED only.","Ambar kapakları, mezarnalar ve komşu perdelerde sınır soğutmasına devam edilir; sıcaklıklar 15 dakikada bir kontrol edilir. Ambar için sabit CO2 sistemi hazırlanır: CO2 odasına personel verilir, bu ambar için gereken tüp sayısı talimattan teyit edilir. Boşaltma yalnızca CANLANDIRILIR."),
+ pump:T("main fire pump","ana yangın pompası"),
+ equip:T("fixed CO2 system (simulated), thermometers","sabit CO2 sistemi (canlandırma), termometreler")},
+{n:T("Accommodation","Yaşam Mahalli"),
+ locs:[T("Galley, deep fat fryer","Kuzine, derin yağ fritözü"),T("Laundry, tumble dryer","Çamaşırhane, kurutma makinesi"),T("Crew mess pantry","Tayfa salonu ofisi"),T("Officers' mess","Zabitan yemek salonu"),T("Ship's office","Gemi ofisi"),T("Crew cabin, A-Deck","A güvertesi tayfa kamarası"),T("Officer's cabin, C-Deck","C güvertesi zabit kamarası"),T("Ship's hospital","Gemi hastanesi"),T("Dry provision store","Kuru erzak deposu"),T("Recreation room","Dinlenme salonu"),T("Air-conditioning room","Klima dairesi"),T("Linen locker, B-Deck","B güvertesi çarşaf dolabı"),T("Gymnasium","Spor salonu"),T("Bonded store","Gümrüklü depo")],
+ causes:[T("electrical short circuit","elektrik kısa devresi"),T("overheated electrical appliance","aşırı ısınan elektrikli cihaz"),T("overloaded extension socket","aşırı yüklenmiş uzatma prizi"),T("faulty light fitting","arızalı aydınlatma armatürü"),T("discarded cigarette","atılan sigara izmariti")],
+ finders:[T("The Cook","Aşçı"),T("The duty OS on fire patrol","Yangın devriyesindeki vardiya gemicisi"),T("The Steward","Kamarot")],
+ isolate:T("Air-conditioning and ventilation for the area stopped, fire doors and fire dampers closed; electrical supply to the space isolated at the switchboard.","Bölgenin klima ve havalandırması durdurulur, yangın kapıları ve yangın damperleri kapatılır; mahallin elektriği tablodan kesilir."),
+ attack:T("Fire team checks door temperature before opening, enters low and attacks the fire with water spray and portable extinguishers; adjacent cabins and corridors are searched for persons.","Yangın ekibi açmadan önce kapı sıcaklığını kontrol eder, alçak pozisyonda girer, su spreyi ve portatif söndürücülerle yangına müdahale eder; komşu kamaralar ve koridorlar personel için aranır."),
+ pump:T("main fire pump","ana yangın pompası"),
+ equip:T("fire blanket, CO2 and dry powder extinguishers","yangın battaniyesi, CO2 ve kuru kimyevi tozlu söndürücüler")},
+{n:T("Engine Room","Makine Dairesi"),
+ locs:[T("Main engine exhaust manifold","Ana makine egzoz manifoldu"),T("No.1 Diesel generator","1 No.lu jeneratör"),T("No.2 Diesel generator","2 No.lu jeneratör"),T("No.3 Generator turbocharger","3 No.lu jeneratör turboşarjı"),T("Fuel oil purifier room","Yakıt seperatör dairesi"),T("Boiler burner front","Kazan brülör önü"),T("Incinerator room","İnsinaratör dairesi"),T("Engine room workshop","Makine atölyesi"),T("Main switchboard","Ana elektrik tablosu"),T("Steering gear room","Dümen dairesi"),T("Emergency generator room","Acil jeneratör dairesi"),T("Fuel oil transfer pump area","Yakıt transfer pompası bölgesi"),T("Lube oil purifier","Yağ seperatörü"),T("Oily water separator area","Yağlı su seperatörü bölgesi")],
+ causes:[T("fuel spray from a leaking high-pressure pipe onto a hot surface","kaçak yapan yüksek basınç borusundan sıcak yüzeye yakıt püskürmesi"),T("lube oil leak onto the exhaust","egzoza yağlama yağı sızıntısı"),T("electrical short circuit","elektrik kısa devresi"),T("self-heating of oily rags","yağlı üstüpülerin kendiliğinden ısınması"),T("hot work spark","sıcak çalışma kıvılcımı")],
+ finders:[T("The Oiler on watch","Vardiyadaki Yağcı"),T("The 3/E during his round","Tur atan 3. Mühendis"),T("The Fitter","Fitter (Tesviyeci)")],
+ isolate:T("Engine room fans stopped, fire dampers and skylights closed; quick-closing valves of fuel and lube oil tanks operated (simulated), fuel pumps and purifiers stopped from the remote emergency stops; electrical supply to the affected equipment isolated.","Makine dairesi fanları durdurulur, yangın damperleri ve skylightlar kapatılır; yakıt ve yağ tanklarının çabuk kapanır valfleri çalıştırılır (canlandırma), yakıt pompaları ve seperatörler uzaktan acil stop ile durdurulur; ilgili ekipmanın elektriği kesilir."),
+ attack:T("Fire team attacks the fire with portable foam/CO2 extinguishers and spray nozzle; second team stands by. Fixed CO2 system prepared for escalation: full evacuation and headcount required before any release. Release SIMULATED only.","Yangın ekibi portatif köpük/CO2 söndürücüler ve sprey lansla müdahale eder; ikinci ekip hazırda bekler. Büyüme ihtimaline karşı sabit CO2 sistemi hazırlanır: boşaltmadan önce tam tahliye ve sayım şarttır. Boşaltma yalnızca CANLANDIRILIR."),
+ pump:T("emergency fire pump (tested)","acil yangın pompası (test edildi)"),
+ equip:T("foam applicator, fixed CO2 system (simulated), local water mist system","köpük lansı, sabit CO2 sistemi (canlandırma), lokal su sisi sistemi")},
+{n:T("Deck Areas","Güverte"),
+ locs:[T("Paint store, forecastle","Baş kasara boya deposu"),T("Bosun store","Lostromo deposu"),T("Forecastle mooring winch","Baş kasara palamar vinci"),T("Deck crane No.1 hydraulic power pack","1 No.lu güverte vinci hidrolik ünitesi"),T("Deck crane No.2 operator cabin","2 No.lu güverte vinci operatör kabini"),T("Deck crane No.3 slewing motor area","3 No.lu güverte vinci dönüş motoru bölgesi"),T("Deck crane No.4 hydraulic power pack","4 No.lu güverte vinci hidrolik ünitesi"),T("Chemical store","Kimyasal deposu"),T("Aft mooring rope store","Kıç halat deposu"),T("Lifeboat deck, battery charger","Filika güvertesi, akü şarj ünitesi"),T("Garbage storage area, poop deck","Kıç kasara çöp toplama alanı"),T("Hatch cover hydraulic power pack room","Ambar kapağı hidrolik ünite dairesi"),T("Gas cylinder store (O2 / acetylene)","Gaz tüpü deposu (oksijen / asetilen)"),T("Bunker station manifold","Yakıt alma (bunker) manifoldu")],
+ causes:[T("hot work spark","sıcak çalışma kıvılcımı"),T("electrical short circuit","elektrik kısa devresi"),T("hydraulic oil leak onto a hot surface","sıcak yüzeye hidrolik yağ sızıntısı"),T("self-heating of oily rags","yağlı üstüpülerin kendiliğinden ısınması"),T("discarded cigarette","atılan sigara izmariti")],
+ finders:[T("The Bosun","Lostromo"),T("The duty AB on deck round","Güverte turundaki vardiya usta gemicisi"),T("The Deck Cadet","Güverte stajyeri")],
+ isolate:T("Electrical and hydraulic supply to the area isolated; accommodation doors and openings on the weather side closed; course altered to put the fire downwind.","Bölgenin elektrik ve hidrolik beslemesi kesilir; yaşam mahallinin rüzgâr tarafındaki kapı ve açıklıkları kapatılır; yangın rüzgâr altında kalacak şekilde rota değiştirilir."),
+ attack:T("Fire attacked from windward with jet/spray hoses; foam applicator used for oil or paint fire; gas cylinders nearby cooled and removed if safe.","Yangına rüzgâr üstünden jet/sprey hortumlarla müdahale edilir; yağ veya boya yangınında köpük lansı kullanılır; yakındaki gaz tüpleri soğutulur ve güvenliyse uzaklaştırılır."),
+ pump:T("main fire pump","ana yangın pompası"),
+ equip:T("foam applicator and portable foam unit","köpük lansı ve portatif köpük ünitesi")}
+];
+
+function buildFire(c){
+  const a=c.area, A=FIRE_AREAS[a], r=Math.floor((c.week-1)/4);
+  const loc=pick(A.locs,r), cause=pick(A.causes,c.week-1), finder=pick(A.finders,r), cas=(c.week-1)%3;
+  const casStep=[
+    S(1,"No casualties. Search team confirms the area clear of persons.","Yaralı yok. Arama ekibi bölgede kimsenin kalmadığını teyit eder."),
+    S(2,"One crew member (OS) missing at headcount. Search team with SCBA finds him in the smoke-filled area, evacuates him by stretcher; oxygen and first aid given in the hospital.","Sayımda bir personel (gemici) eksik. SCBA'lı arama ekibi onu dumanlı bölgede bulur, sedye ile tahliye eder; hastanede oksijen ve ilk yardım uygulanır."),
+    S(2,"One fire team member receives a minor burn on the hand: cooled with water for 20 minutes, sterile dressing applied, entry made in the medical log.","Yangın ekibinden bir kişi elinden hafif yanar: 20 dakika su ile soğutulur, steril pansuman yapılır, tıbbi kayda işlenir.")][cas];
+  return {
+    sub:T(`Week ${c.week} · Area ${a+1}: ${A.n.en}`,`Hafta ${c.week} · Bölge ${a+1}: ${A.n.tr}`),
+    scen:T(`Fire at ${loc.en}, caused by ${cause.en}.`,`${loc.tr} bölgesinde ${cause.tr} nedeniyle yangın.`),
+    steps:[
+      S(1,`${finder.en} discovers smoke and flames at ${loc.en}, raises the alarm at the nearest manual call point and reports to the bridge.`,`${finder.tr}, ${loc.tr} bölgesinde duman ve alev tespit eder, en yakın yangın ihbar butonuna basar ve köprüüstüne bildirir.`),
+      S(1,`OOW sounds the fire alarm (continuous ringing) and announces on PA: "Fire, fire, fire at ${loc.en}. This is a drill." Master and C/E informed, time and position recorded.`,`Vardiya zabiti yangın alarmını çalar (sürekli zil) ve anons eder: "Yangın, yangın, yangın — ${loc.tr}. Bu bir talimdir." Kaptan ve Başmühendis bilgilendirilir, saat ve mevki kaydedilir.`),
+      S(2,"Master takes command on the bridge; course and speed adjusted to reduce wind effect on the fire. All crew muster at their stations as per muster list with lifejackets and helmets; headcount reported to the Master.","Kaptan köprüüstünde komutayı alır; rüzgârın yangına etkisini azaltmak için rota ve hız ayarlanır. Tüm personel görev çizelgesine göre can yeleği ve baretleriyle istasyonlarında toplanır; sayım Kaptana bildirilir."),
+      S(2,"C/O takes charge on scene. Two firemen don firefighter's outfits and SCBA: cylinder pressure checked (min. 270 bar), face seal and low-pressure whistle tested, lifelines attached, entry time written on the BA control board, radio check done.","2. Kaptan olay yerinde sorumluluğu alır. İki itfaiyeci itfaiyeci donanımı ve SCBA giyer: tüp basıncı kontrol edilir (min. 270 bar), maske sızdırmazlığı ve düşük basınç düdüğü test edilir, can halatları bağlanır, giriş saati SCBA kontrol panosuna yazılır, telsiz kontrolü yapılır."),
+      S(1,A.isolate.en,A.isolate.tr),
+      S(1,`${cap(A.pump.en)} started, fire main pressurised, hoses run out with jet/spray nozzles; boundary cooling of adjacent bulkheads and decks started.`,`${cap(A.pump.tr)} çalıştırılır, yangın hattı basınçlandırılır, jet/sprey lanslı hortumlar serilir; komşu perde ve güvertelerde sınır soğutması başlatılır.`),
+      S(2,A.attack.en,A.attack.tr),
+      casStep,
+      S(1,"Fire reported extinguished. Re-ignition watch posted; space ventilated and atmosphere tested (O2, CO, LEL) before re-entry; damage assessed.","Yangının söndüğü bildirilir. Yeniden alevlenmeye karşı nöbetçi bırakılır; mahal havalandırılır, tekrar girişten önce atmosfer ölçülür (O2, CO, LEL); hasar tespiti yapılır."),
+      S(1,"Master orders stand down. Hoses drained and stowed, SCBA cylinders recharged, extinguishers used refilled. Debrief at muster station, lessons learned discussed.","Kaptan talimi bitirir. Hortumlar boşaltılıp yerine konur, SCBA tüpleri doldurulur, kullanılan söndürücüler yenilenir. Toplanma yerinde değerlendirme yapılır, alınan dersler konuşulur.")
+    ],
+    equip:T(`2 firefighter's outfits, 2 SCBA with spare cylinders, fire hoses and nozzles, portable extinguishers, fire axe, lifelines, BA control board, UHF radios, stretcher, first aid kit, ${A.equip.en}.`,`2 itfaiyeci donanımı, 2 SCBA ve yedek tüpler, yangın hortumları ve lansları, portatif söndürücüler, yangın baltası, can halatları, SCBA kontrol panosu, UHF telsizler, sedye, ilk yardım çantası, ${A.equip.tr}.`)
+  };
+}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1)}
+
+/* ---------------- ABANDON SHIP ---------------- */
+const AB_REASON=[
+ T("uncontrollable fire in the engine room spreading to the accommodation","makine dairesinde kontrol edilemeyen ve yaşam mahalline yayılan yangın"),
+ T("progressive flooding of No.1 Hold after collision","çatışma sonrası 1 No.lu ambarda ilerleyen su alma"),
+ T("heavy list caused by cargo shift in heavy weather","ağır havada yük kayması sonucu büyük meyil"),
+ T("hull breach after grounding, vessel settling by the head","karaya oturma sonrası gövde yırtığı, geminin başa doğru batması"),
+ T("explosion in the purifier room, fire out of control","seperatör dairesinde patlama, yangın kontrolden çıkmış"),
+ T("shell plating failure in heavy weather","ağır havada borda sacı hasarı"),
+ T("toxic smoke from a cargo hold fire covering the accommodation","ambar yangınından çıkan zehirli dumanın yaşam mahallini sarması"),
+ T("engine room flooding through sea chest failure, loss of all power","deniz sandığı arızası ile makine dairesine su dolması, tüm elektriğin kesilmesi")];
+const AB_VAR=[
+ S(2,"Abandonment via PORT lifeboat; embarkation practised: seating order, seat belts fastened, hatches closed.","İSKELE filika ile terk; biniş tatbik edilir: oturma sırası, emniyet kemerleri takılır, kapaklar kapatılır."),
+ S(2,"Abandonment via STARBOARD lifeboat; embarkation practised: seating order, seat belts fastened, hatches closed.","SANCAK filika ile terk; biniş tatbik edilir: oturma sırası, emniyet kemerleri takılır, kapaklar kapatılır."),
+ S(2,"Vessel listed 15° to port, port lifeboat assumed unusable. Port crew redirected to starboard lifeboat and liferafts as per muster list.","Gemi iskeleye 15° meyilli, iskele filika kullanılamaz kabul edilir. İskele ekibi görev çizelgesine göre sancak filika ve can sallarına yönlendirilir."),
+ S(2,"Night conditions simulated: deck and embarkation lighting, torches and lifejacket lights checked; communication by handheld VHF only.","Gece şartları canlandırılır: güverte ve biniş aydınlatması, el fenerleri ve can yeleği ışıkları kontrol edilir; haberleşme yalnızca el VHF'i ile."),
+ S(2,"Main power lost: emergency generator supplies emergency lighting; lifeboat lowering by gravity with manual brake control demonstrated.","Ana elektrik kesilir: acil jeneratör acil aydınlatmayı besler; filikanın yerçekimi ile manuel fren kontrollü indirilmesi gösterilir."),
+ S(2,"One crew member (Oiler) missing at muster. Search party of two sent with UHF radio; found in the ER workshop and escorted to the muster station.","Toplanmada bir personel (yağcı) eksik. UHF telsizli iki kişilik arama ekibi gönderilir; makine atölyesinde bulunup toplanma yerine getirilir."),
+ S(2,"Injured crew member (leg injury) carried on stretcher to the embarkation station and secured in the lifeboat.","Bacağından yaralı bir personel sedye ile biniş istasyonuna taşınır ve filikaya emniyetle yerleştirilir.")];
+const AB_VAR_N=[T("port lifeboat","iskele filika"),T("starboard lifeboat","sancak filika"),T("15° list","15° meyil"),T("night conditions","gece şartları"),T("blackout","elektrik kesintisi"),T("missing person","kayıp personel"),T("injured person","yaralı personel")];
+
+function buildAbandon(c){
+  const reason=pick(AB_REASON,c.week-1), vi=(c.week-1)%7, v=AB_VAR[vi];
+  const steps=[
+    S(1,`Situation: ${reason.en}. Master decides to abandon ship. General emergency alarm (7 short + 1 long blasts) sounded on alarm bells and ship's whistle; PA: "All crew to muster stations. This is a drill."`,`Durum: ${reason.tr}. Kaptan gemiyi terk kararı verir. Genel acil durum alarmı (7 kısa + 1 uzun) zil ve düdükle çalınır; anons: "Tüm personel toplanma yerlerine. Bu bir talimdir."`),
+    S(2,"All crew proceed to muster stations wearing warm clothing and lifejackets, carrying immersion suits. Muster list checked, headcount reported to the bridge.","Tüm personel sıcak giysiler ve can yelekleriyle, ısı korumalı elbiselerini alarak toplanma yerlerine gider. Görev çizelgesi kontrol edilir, sayım köprüüstüne bildirilir."),
+    S(2,"C/O checks lifejackets are correctly donned. Two crew members don immersion suits; time checked (max. 2 minutes, LSA Code).","2. Kaptan can yeleklerinin doğru giyildiğini kontrol eder. İki personel ısı korumalı elbise giyer; süre ölçülür (en fazla 2 dakika, LSA Kodu)."),
+    S(1,"Duties per muster list: 2/O brings portable VHF radios and SART, 3/O brings the EPIRB, Cook brings extra provisions and blankets. GMDSS distress alert SIMULATED, not transmitted.","Görev çizelgesine göre: 2. Zabit el VHF'leri ve SART'ı, 3. Zabit EPIRB'i, Aşçı ek erzak ve battaniyeleri getirir. GMDSS tehlike çağrısı CANLANDIRILIR, gönderilmez."),
+    S(2,"Lifeboat crew remove gripes, check drain plug, painter and equipment; lifeboat engine started and run ahead/astern; boat lowered to embarkation deck.","Filika ekibi gripleri söker, tıpa, pruva halatı ve ekipmanı kontrol eder; filika motoru çalıştırılıp ileri/geri denenir; filika biniş güvertesine indirilir."),
+    v
+  ];
+  if(c.xm){
+    steps.push(S(4,"XM: All lifeboats launched into the water with assigned crew. Off-load release demonstrated, boat manoeuvred around the vessel approx. 15 minutes with VHF contact to bridge; boat recovered, hooks reset, falls checked. Entry made in the log book.","XM: Tüm filikalar görevli ekibiyle suya indirilir. Yüksüz kanca açma gösterilir, filika köprüüstüyle VHF temasında yaklaşık 15 dakika gemi etrafında manevra yapar; filika geri alınır, kancalar kurulur, halatlar kontrol edilir. Jurnale kayıt edilir."));
+  } else {
+    steps.push(S(1,"Emergency lighting at muster and embarkation stations checked; liferafts, HRUs and launching appliances inspected.","Toplanma ve biniş yerlerindeki acil aydınlatma kontrol edilir; can salları, hidrostatik serbest bırakma üniteleri ve indirme düzenekleri incelenir."));
+  }
+  steps.push(S(1,"Stand down: boats hoisted and secured, gripes reset, equipment checked, immersion suits stowed. Debrief held.","Talim sonu: filikalar yerine alınıp emniyete alınır, gripler takılır, ekipman kontrol edilir, ısı korumalı elbiseler yerine konur. Değerlendirme yapılır."));
+  return {
+    sub:T(`Week ${c.week} · Variation: ${AB_VAR_N[vi].en}${c.xm?" · XM (boats in water)":""}`,`Hafta ${c.week} · Durum: ${AB_VAR_N[vi].tr}${c.xm?" · XM (filikalar suya)":""}`),
+    scen:T(`Abandon ship due to ${reason.en}.`,`${cap(reason.tr)} nedeniyle gemiyi terk.`),
+    steps,
+    equip:T("Lifeboats, liferafts, lifejackets, immersion suits, portable VHF radios, SART, EPIRB, emergency lighting, stretcher, UHF radios.","Filikalar, can salları, can yelekleri, ısı korumalı elbiseler, el VHF'leri, SART, EPIRB, acil aydınlatma, sedye, UHF telsizler.")
+  };
+}
+
+/* ---------------- SINGLE-STEP-SET DRILLS ---------------- */
+const STEERING_SC=[
+ T("steering gear control system failure in open sea","açık denizde dümen kontrol sistemi arızası"),
+ T("No.1 hydraulic pump failure during coastal passage","kıyı seyrinde 1 No.lu hidrolik pompa arızası"),
+ T("autopilot and follow-up control failure while approaching a TSS","trafik ayırım düzenine yaklaşırken otopilot ve follow-up kontrol arızası"),
+ T("electrical failure of the steering motor in restricted waters","dar sularda dümen motorunun elektrik arızası"),
+ T("hydraulic oil leak with low level alarm in the steering gear","dümen makinesinde hidrolik yağ kaçağı ve düşük seviye alarmı"),
+ T("loss of bridge steering control after main switchboard trip","ana tablo atması sonrası köprüüstü dümen kontrolünün kaybı")];
+function buildSteering(c){const s=pick(STEERING_SC,c.k);return{
+ scen:T(`Loss of steering: ${s.en}.`,`Dümen arızası: ${s.tr}.`),
+ steps:[
+  S(1,`OOW observes rudder not responding (${s.en}); steering failure alarm acknowledged.`,`Vardiya zabiti dümenin cevap vermediğini görür (${s.tr}); dümen arıza alarmı kabul edilir.`),
+  S(1,"Master and C/E informed; main engine on stand-by, speed reduced; position, traffic and depth checked.","Kaptan ve Başmühendis bilgilendirilir; ana makine stand-by, hız düşürülür; mevki, trafik ve derinlik kontrol edilir."),
+  S(1,"NUC signals displayed (2 all-round red lights / 2 black balls); Sécurité warning on VHF Ch.16 simulated.","Kumanda altında olmayan gemi işaretleri verilir (2 kırmızı fener / 2 siyah top); VHF Kanal 16'da Sécurité uyarısı canlandırılır."),
+  S(1,"Emergency steering team (2/O, AB, 2/E) proceeds to steering gear room; communication with bridge established by sound-powered telephone and VHF; gyro repeater and rudder angle indicator checked.","Acil dümen ekibi (2. Zabit, usta gemici, 2. Mühendis) dümen dairesine gider; köprüüstü ile ses gücüyle çalışan telefon ve VHF bağlantısı kurulur; cayro tekrarlayıcı ve dümen açı göstergesi kontrol edilir."),
+  S(2,"Changeover to local/emergency steering as per posted instructions. Helm orders from bridge executed (port 10, midships, starboard 20, hard over) and rudder response confirmed.","Dairede asılı talimata göre lokal/acil dümene geçilir. Köprüüstünden verilen dümen emirleri uygulanır (iskele 10, alavara, sancak 20, alabanda) ve dümen cevabı teyit edilir."),
+  S(2,"Both steering pumps and the alternative power supply tested; heading kept for 10 minutes with emergency steering.","Her iki dümen pompası ve alternatif güç kaynağı test edilir; acil dümenle 10 dakika rota tutulur."),
+  S(1,"Control returned to bridge; follow-up, non-follow-up and autopilot tested; NUC signals lowered, Sécurité cancelled.","Kontrol köprüüstüne alınır; follow-up, non-follow-up ve otopilot test edilir; NUC işaretleri indirilir, Sécurité iptal edilir."),
+  S(1,"Stand down and debrief. Drill recorded in the log book (SOLAS V/26, every 3 months).","Talim sonu ve değerlendirme. Talim jurnale işlenir (SOLAS V/26, 3 ayda bir).")],
+ equip:T("Steering gear, emergency steering instructions, sound-powered telephone, VHF/UHF radios, gyro repeater, NUC signals.","Dümen makinesi, acil dümen talimatı, ses gücüyle çalışan telefon, VHF/UHF telsizler, cayro tekrarlayıcı, NUC işaretleri.")}}
+
+const MOB_SC=[
+ {s:T("An AB falls overboard from the starboard main deck while checking hatch cover cleats; daylight, calm sea.","Bir usta gemici ambar kapağı kilitlerini kontrol ederken sancak ana güverteden denize düşer; gündüz, sakin deniz."),side:"s",turn:"W",rec:"boat"},
+ {s:T("Night watch: the lookout sees a crew member fall from the port poop deck.","Gece vardiyası: gözcü bir personelin iskele kıç kasaradan düştüğünü görür."),side:"p",turn:"A",rec:"boat"},
+ {s:T("A Cadet is reported missing at 08:00, last seen on deck at 02:30.","Bir stajyer saat 08:00'de kayıp bildirilir, en son 02:30'da güvertede görülmüştür."),side:"-",turn:"S",rec:"boat"},
+ {s:T("A crew member falls from the starboard pilot ladder during pilot embarkation.","Pilot alınırken bir personel sancak pilot çarmıhından denize düşer."),side:"s",turn:"W",rec:"boat"},
+ {s:T("Heavy weather: the Bosun is washed overboard at the port forecastle; launching the rescue boat is unsafe.","Ağır hava: Lostromo iskele baş kasaradan dalga ile denize düşer; kurtarma botu indirmek emniyetsizdir."),side:"p",turn:"W",rec:"ship"},
+ {s:T("At anchor: an Oiler falls unconscious into the water near the starboard accommodation ladder.","Demirdeyken: bir yağcı sancak iskele merdiveni yakınında baygın halde denize düşer."),side:"s",turn:"N",rec:"boat"}];
+const TURNS={
+ W:T("Williamson turn: rudder hard over to the side of the person; after 60° change, rudder hard over to the opposite side; steady on reciprocal course and approach the person.","Williamson dönüşü: dümen kazazedenin olduğu tarafa alabanda; 60° değişimden sonra ters tarafa alabanda; ters rotada sabitlenip kazazedeye yaklaşılır."),
+ A:T("Anderson turn: rudder hard over to the side of the person, turn about 250° and approach with engine stopped when the person is about 20° ahead.","Anderson dönüşü: dümen kazazede tarafına alabanda, yaklaşık 250° dönülür, kazazede pruvanın 20° açığına gelince makine stop ile yaklaşılır."),
+ S:T("Scharnow turn: rudder hard over, after 240° change rudder hard over to the opposite side; steady on reciprocal course to search back along the track. Search plan made with IAMSAR.","Scharnow dönüşü: dümen alabanda, 240° değişimden sonra ters tarafa alabanda; geçilen rotada geri aramak için ters rotada sabitlenir. IAMSAR'a göre arama planı yapılır."),
+ N:T("Vessel at anchor: no manoeuvre; rescue boat prepared and launched immediately, anchor watch kept.","Gemi demirde: manevra yok; kurtarma botu derhal hazırlanıp indirilir, demir vardiyası sürdürülür.")};
+function buildMob(c){const m=pick(MOB_SC,c.k);
+ const sideEn=m.side==="s"?"starboard":m.side==="p"?"port":"", sideTr=m.side==="s"?"sancak":m.side==="p"?"iskele":"";
+ const first = m.turn==="S"
+  ? S(1,"Person missing: last known position and time plotted from ECDIS/VDR; Master informed, ship-wide search started.","Kayıp personel: son görüldüğü mevki ve saat ECDIS/VDR'den işaretlenir; Kaptan bilgilendirilir, gemi içi arama başlatılır.")
+  : S(1,`Witness shouts "Man overboard ${sideEn} side!", throws the nearest lifebuoy (with light and smoke signal) and keeps pointing at the person.`,`Gören kişi "${cap(sideTr)} taraftan denize adam düştü!" diye bağırır, en yakın can simidini (ışık ve duman işaretli) atar ve kazazedeyi göstermeye devam eder.`);
+ const rec = m.rec==="ship"
+  ? S(3,"Recovery from the ship's lee side: scrambling net and rescue sling rigged, crew in lifejackets with safety harness; casualty (dummy) recovered on board.","Geminin rüzgâraltı bordasından kurtarma: tırmanma ağı ve kurtarma askısı hazırlanır, ekip can yeleği ve emniyet kemeriyle çalışır; kazazede (manken) gemiye alınır.")
+  : S(3,"Rescue boat crew muster in lifejackets/immersion suits; boat prepared, lowered and recovers the casualty (dummy); boat and crew back on board.","Kurtarma botu ekibi can yeleği/ısı korumalı elbiselerle toplanır; bot hazırlanır, indirilir ve kazazedeyi (manken) alır; bot ve ekip gemiye döner.");
+ return{
+ scen:m.s,
+ steps:[
+  first,
+  S(1,`OOW presses MOB button on ECDIS/GPS, releases bridge-wing MOB lifebuoy${sideEn?`, puts rudder hard over to ${sideEn}`:""}; engine on stand-by, Master informed.`,`Vardiya zabiti ECDIS/GPS'te MOB butonuna basar, köprü kanadındaki MOB can simidini atar${sideTr?`, dümeni ${sideTr} alabanda yapar`:""}; makine stand-by, Kaptan bilgilendirilir.`),
+  S(1,'Three prolonged blasts ("O") and general alarm; PA: "Man overboard. This is a drill." Flag "O" hoisted, lookouts posted on bridge wings.','Üç uzun düdük ("O") ve genel alarm; anons: "Denize adam düştü. Bu bir talimdir." "O" bayrağı çekilir, köprü kanatlarına gözcü konur.'),
+  S(2,TURNS[m.turn].en,TURNS[m.turn].tr),
+  S(1,"PAN-PAN / MAYDAY RELAY to nearby vessels and MRCC SIMULATED on VHF Ch.16 / DSC (not transmitted).","Yakındaki gemilere ve MRCC'ye VHF Kanal 16 / DSC üzerinden PAN-PAN / MAYDAY RELAY CANLANDIRILIR (gönderilmez)."),
+  rec,
+  S(2,"Casualty kept horizontal, wet clothes removed, treated for hypothermia; CPR if unresponsive; radio medical advice (TMAS) simulated.","Kazazede yatay tutulur, ıslak giysileri çıkarılır, hipotermi tedavisi uygulanır; tepki yoksa CPR; telsizle tıbbi danışma (TMAS) canlandırılır."),
+  S(1,"Stand down: rescue boat secured, used lifebuoys replaced. Debrief held.","Talim sonu: kurtarma botu emniyete alınır, kullanılan can simitleri yenilenir. Değerlendirme yapılır.")],
+ equip:T("Lifebuoys with light and smoke signal, rescue boat, lifejackets, immersion suits, rescue sling, scrambling net, VHF/UHF radios, stretcher, blankets, first aid kit.","Işıklı ve duman işaretli can simitleri, kurtarma botu, can yelekleri, ısı korumalı elbiseler, kurtarma askısı, tırmanma ağı, VHF/UHF telsizler, sedye, battaniyeler, ilk yardım çantası.")}}
+
+const OIL_SC=[
+ T("Fuel oil overflows from No.2 FO tank vent on deck during bunkering.","Yakıt alımı sırasında 2 No.lu yakıt tankı havalandırmasından güverteye yakıt taşar."),
+ T("Hydraulic hose of deck crane No.3 bursts, oil sprays onto the main deck.","3 No.lu güverte vincinin hidrolik hortumu patlar, yağ ana güverteye fışkırır."),
+ T("Leak from the starboard bunker manifold flange during bunkering.","Yakıt alımı sırasında sancak bunker manifold flanşından kaçak."),
+ T("Hatch cover hydraulic pipe fails at No.4 Hold, oil reaches the scupper.","4 No.lu ambar kapağı hidrolik borusu patlar, yağ frengiye ulaşır."),
+ T("Overflow on deck during internal FO transfer due to a sounding error.","Ölçüm hatası nedeniyle tanklar arası yakıt transferinde güverteye taşma."),
+ T("Lube oil drum ruptures during provision/store handling on the aft deck.","Kıç güvertede kumanya/malzeme alımı sırasında yağ varili patlar.")];
+function buildOil(c){const s=pick(OIL_SC,c.k);return{
+ scen:s,
+ steps:[
+  S(1,`Discovery: ${s.en}`,`Tespit: ${s.tr}`),
+  S(1,"Operation stopped immediately: pumps stopped, valves closed, source isolated; bunker station / ER informed.","Operasyon derhal durdurulur: pompalar durdurulur, valfler kapatılır, kaynak izole edilir; bunker istasyonu / makine dairesi bilgilendirilir."),
+  S(1,'Alarm and PA: "Oil spill on deck, SOPEP team to muster. This is a drill." Master and C/E informed; smoking and hot work prohibited.','Alarm ve anons: "Güvertede yağ dökülmesi, SOPEP ekibi toplansın. Bu bir talimdir." Kaptan ve Başmühendis bilgilendirilir; sigara ve sıcak çalışma yasaklanır.'),
+  S(2,"SOPEP team musters with PPE (chemical suits, gloves, goggles, boots). Scupper plugs confirmed in place; spill contained with absorbent booms.","SOPEP ekibi KKD ile toplanır (kimyasal elbise, eldiven, gözlük, çizme). Frengi tapalarının takılı olduğu teyit edilir; dökülme emici bariyerlerle çevrelenir."),
+  S(3,"Oil collected with absorbent pads, sawdust, scoops and portable pump into empty drums/tank; deck cleaned. No chemicals or oil washed overboard.","Yağ emici pedler, talaş, kürek ve portatif pompa ile boş varillere/tanka toplanır; güverte temizlenir. Denize kimyasal veya yağ atılmaz."),
+  S(1,"Hull and water surface checked: no oil overboard.","Borda ve deniz yüzeyi kontrol edilir: denize yağ geçmemiştir."),
+  S(1,"Reports SIMULATED per SOPEP: port/coastal state, DPA and P&I. Oil Record Book entry discussed.","SOPEP'e göre raporlar CANLANDIRILIR: liman/kıyı devleti, DPA ve P&I. Yağ Kayıt Defteri kaydı görüşülür."),
+  S(1,"Stand down: oily waste stored in labelled drums, SOPEP locker replenished. Debrief held.","Talim sonu: yağlı atıklar etiketli varillerde saklanır, SOPEP dolabı tamamlanır. Değerlendirme yapılır.")],
+ equip:T("SOPEP locker: absorbent pads and booms, sawdust, scoops, shovels, portable pump, empty drums, scupper plugs, chemical suits, gloves, goggles, UHF radios.","SOPEP dolabı: emici ped ve bariyerler, talaş, kepçe, kürek, portatif pompa, boş variller, frengi tapaları, kimyasal elbiseler, eldiven, gözlük, UHF telsizler.")}}
+
+const DAVIT_SC=[
+ T("Starboard davit-launched liferaft; focus on the automatic release hook.","Sancak davitli can salı; odak: otomatik açılır kanca."),
+ T("Port davit-launched liferaft; focus on bowsing and tricing lines.","İskele davitli can salı; odak: bowsing ve tricing halatları."),
+ T("Night conditions; focus on deck illumination and communication.","Gece şartları; odak: güverte aydınlatması ve haberleşme."),
+ T("Vessel listed 10°; focus on swinging out against the list.","Gemi 10° meyilli; odak: meyile karşı salı dışarı alma."),
+ T("New crew members practise each station role.","Yeni personel her görev rolünü tatbik eder."),
+ T("Power failure; focus on manual operation and recovering the davit wire.","Elektrik kesintisi; odak: manuel çalıştırma ve davit telini geri sarma.")];
+function buildDavit(c){const s=pick(DAVIT_SC,c.k);return{
+ scen:T(`Davit-launched liferaft training. ${s.en}`,`Davitli can salı eğitimi. ${s.tr}`),
+ steps:[
+  S(1,"Crew muster at the davit-launched liferaft station with lifejackets; briefing on posted launching instructions.","Personel can yelekleriyle davitli can salı istasyonunda toplanır; asılı indirme talimatı anlatılır."),
+  S(1,"Davit, winch brake, release hook, bowsing lines and embarkation area inspected.","Davit, vinç freni, açılır kanca, bowsing halatları ve biniş alanı kontrol edilir."),
+  S(2,"Demonstration: liferaft container attached to the davit hook, painter secured, raft swung outboard (inflation simulated unless a training raft is used).","Gösterim: can salı konteyneri davit kancasına takılır, pruva halatı bağlanır, sal dışarı alınır (eğitim salı yoksa şişirme canlandırılır)."),
+  S(2,"Embarkation procedure explained: boarding order, weight distribution, release of bowsing lines.","Biniş prosedürü anlatılır: biniş sırası, ağırlık dağılımı, bowsing halatlarının çözülmesi."),
+  S(2,"Lowering procedure: brake lever operation, arming the automatic release hook just before water entry, release.","İndirme prosedürü: fren kolu kullanımı, suya değmeden hemen önce otomatik kancanın kurulması, açma."),
+  S(2,s.en,s.tr),
+  S(1,"Stand down: davit and raft resecured, hook reset. Training recorded (SOLAS III/19.3.4.3, every 4 months).","Talim sonu: davit ve sal yerine emniyete alınır, kanca kurulur. Eğitim kaydedilir (SOLAS III/19.3.4.3, 4 ayda bir).")],
+ equip:T("Davit-launched liferaft, davit and winch, release hook, bowsing/tricing lines, lifejackets, UHF radios, deck lighting.","Davitli can salı, davit ve vinç, açılır kanca, bowsing/tricing halatları, can yelekleri, UHF telsizler, güverte aydınlatması.")}}
+
+const ENC_SC=[
+ {sp:T("No.3 Port water ballast tank","3 No.lu iskele balast tankı"),h:T("oxygen deficiency due to rusting","paslanma nedeniyle oksijen eksikliği")},
+ {sp:T("No.4 Cargo Hold bottom (coal residue)","4 No.lu ambar dibi (kömür kalıntısı)"),h:T("oxygen depletion and CO/methane from cargo","yükten kaynaklanan oksijen azalması ve CO/metan")},
+ {sp:T("Duct keel / pipe tunnel","Boru tüneli (duct keel)"),h:T("fall with head injury","düşme ve kafa yaralanması")},
+ {sp:T("Starboard chain locker","Sancak zincirlik"),h:T("fall from ladder, leg injury","merdivenden düşme, bacak yaralanması")},
+ {sp:T("Cofferdam forward of the engine room","Makine dairesi önündeki koferdam"),h:T("fuel vapour, dizziness","yakıt buharı, baş dönmesi")},
+ {sp:T("Sewage holding tank","Pis su tankı"),h:T("H2S exposure","H2S maruziyeti")}];
+function buildEnc(c){const e=pick(ENC_SC,c.k);return{
+ scen:T(`Crew member collapses inside ${e.sp.en}: ${e.h.en}.`,`Bir personel ${e.sp.tr} içinde yığılır: ${e.h.tr}.`),
+ steps:[
+  S(1,`Entry into ${e.sp.en} under permit, atmosphere tested, attendant at the entrance. The entrant stops responding (${e.h.en}).`,`${e.sp.tr} içine izinle giriş yapılmış, atmosfer ölçülmüş, girişte gözcü var. İçerideki personel cevap vermez (${e.h.tr}).`),
+  S(1,"Attendant does NOT enter; raises the alarm by radio to the bridge.","Gözcü İÇERİ GİRMEZ; telsizle köprüüstüne alarm verir."),
+  S(1,`Bridge sounds the alarm, PA: "Enclosed space rescue at ${e.sp.en}. This is a drill." Rescue team musters with rescue equipment.`,`Köprüüstü alarm verir, anons: "${e.sp.tr} kapalı mahal kurtarma. Bu bir talimdir." Kurtarma ekibi ekipmanla toplanır.`),
+  S(2,"Team leader assesses; atmosphere tested at the entrance (O2 20.9%, LEL, H2S, CO); forced ventilation started.","Ekip lideri durumu değerlendirir; girişte atmosfer ölçülür (O2 %20,9, LEL, H2S, CO); cebri havalandırma başlatılır."),
+  S(2,"Two rescuers don SCBA with lifelines; entry times on BA control board; communication checked; rescuers enter.","İki kurtarıcı can halatlı SCBA giyer; giriş saatleri SCBA panosuna yazılır; haberleşme kontrol edilir; kurtarıcılar girer."),
+  S(3,"Casualty reached, airway and breathing checked, EEBD fitted; placed in rescue stretcher (Neil Robertson) and lifted out with tripod/rescue hoist.","Kazazedeye ulaşılır, hava yolu ve solunum kontrol edilir, EEBD takılır; kurtarma sedyesine (Neil Robertson) konup tripod/kurtarma vinci ile dışarı alınır."),
+  S(2,"First aid: oxygen resuscitator, recovery position, CPR if required; radio medical advice simulated.","İlk yardım: oksijen resüsitatörü, koma pozisyonu, gerekirse CPR; telsizle tıbbi danışma canlandırılır."),
+  S(1,"Space secured, permit cancelled. Debrief: why the attendant must never enter. Drill recorded (SOLAS III/19.3.6, every 2 months).","Mahal emniyete alınır, izin iptal edilir. Değerlendirme: gözcünün neden asla girmemesi gerektiği. Talim kaydedilir (SOLAS III/19.3.6, 2 ayda bir).")],
+ equip:T("Gas detector, SCBA x2 with lifelines, EEBD, tripod and rescue hoist, Neil Robertson stretcher, portable ventilation fan, oxygen resuscitator, UHF radios, entry permit.","Gaz ölçer, 2 can halatlı SCBA, EEBD, tripod ve kurtarma vinci, Neil Robertson sedye, portatif havalandırma fanı, oksijen resüsitatörü, UHF telsizler, giriş izni.")}}
+
+const GR_SC=[
+ T("Vessel grounds on a sandbank at night during coastal passage.","Gemi gece kıyı seyrinde kum sığlığına oturur."),
+ T("Vessel touches a rocky shoal in pilotage waters; double bottom damage suspected.","Gemi kılavuzluk sularında kayalık sığlığa değer; çift dip hasarından şüphelenilir."),
+ T("Anchor drags in a storm and the vessel grounds near the shore.","Fırtınada demir tarar ve gemi kıyıya yakın oturur."),
+ T("Vessel grounds in a channel after steering failure.","Dümen arızası sonrası gemi kanalda karaya oturur.")];
+function buildGround(c){const s=pick(GR_SC,c.k);return{scen:s,steps:[
+  S(1,`Event: ${s.en}`,`Olay: ${s.tr}`),
+  S(1,"Engine stopped; general emergency alarm and PA; Master on bridge; time and position recorded, VDR data saved.","Makine stop; genel acil durum alarmı ve anons; Kaptan köprüüstünde; saat ve mevki kaydedilir, VDR verisi kaydedilir."),
+  S(1,"Aground signals displayed (anchor lights + 2 all-round red / 3 black balls); sound signals as per COLREG; Sécurité on VHF simulated.","Karaya oturmuş gemi işaretleri verilir (demir fenerleri + 2 kırmızı fener / 3 siyah top); COLREG'e göre ses işaretleri; VHF Sécurité canlandırılır."),
+  S(1,"Watertight doors closed; crew mustered, headcount reported.","Su geçirmez kapılar kapatılır; personel toplanır, sayım bildirilir."),
+  S(3,"Damage assessment: soundings of all tanks, bilges and void spaces compared with last records; ER checked; depths around the hull taken with hand lead.","Hasar tespiti: tüm tank, sintine ve boş mahaller iskandil edilip son kayıtlarla karşılaştırılır; makine dairesi kontrol edilir; gemi etrafında el iskandili ile derinlik alınır."),
+  S(1,"Water around the hull checked for pollution; SOPEP team on standby.","Gemi etrafında kirlilik kontrolü yapılır; SOPEP ekibi hazırda."),
+  S(2,"C/O calculates stability and hull stress with the loading computer. Refloating not attempted before assessment and consultation with company/DPA; tide information obtained.","2. Kaptan yükleme bilgisayarıyla stabilite ve gövde gerilmelerini hesaplar. Değerlendirme ve şirket/DPA ile görüşmeden önce yüzdürme denenmez; gelgit bilgisi alınır."),
+  S(1,"Reports simulated: DPA, coastal state, MRCC if needed.","Raporlar canlandırılır: DPA, kıyı devleti, gerekirse MRCC."),
+  S(1,"Stand down and debrief.","Talim sonu ve değerlendirme.")],
+ equip:T("Sounding tapes, hand lead, loading computer, damage control equipment, VDR, signal shapes and lights, VHF/UHF radios, SOPEP equipment.","İskandil şeritleri, el iskandili, yükleme bilgisayarı, hasar kontrol malzemeleri, VDR, işaret topları ve fenerler, VHF/UHF telsizler, SOPEP malzemeleri.")}}
+
+const FL_SC=[
+ T("Engine room flooding from a fractured sea water cooling pipe.","Kırılan deniz suyu soğutma borusundan makine dairesine su girişi."),
+ T("Water ingress alarm in No.1 Cargo Hold.","1 No.lu ambarda su girişi alarmı."),
+ T("Flooding in the bow thruster room / fore peak.","Baş itici dairesinde / baş pik tankında su alma."),
+ T("Steering gear room flooding through stern tube seal failure.","Şaft kovanı sızdırmazlık arızası ile dümen dairesine su girişi.")];
+function buildFlood(c){const s=pick(FL_SC,c.k);return{scen:s,steps:[
+  S(1,`Bilge / water ingress alarm: ${s.en}`,`Sintine / su girişi alarmı: ${s.tr}`),
+  S(1,"Investigation team confirms flooding; general alarm and PA; Master and C/E informed.","İnceleme ekibi su almayı teyit eder; genel alarm ve anons; Kaptan ve Başmühendis bilgilendirilir."),
+  S(1,"Watertight doors closed; crew mustered, headcount reported.","Su geçirmez kapılar kapatılır; personel toplanır, sayım bildirilir."),
+  S(2,"Source isolated by closing valves; bilge pumps and emergency bilge suction started; water level monitored.","Valfler kapatılarak kaynak izole edilir; sintine pompaları ve acil sintine emişi çalıştırılır; su seviyesi takip edilir."),
+  S(2,"Damage control: wooden plugs, wedges, pipe clamps and cement box applied (simulated).","Hasar kontrol: ahşap tıpalar, takozlar, boru kelepçeleri ve çimento kasası uygulanır (canlandırma)."),
+  S(2,"C/O checks stability with the loading computer (list, trim, free surface); ballast adjustment considered.","2. Kaptan yükleme bilgisayarıyla stabiliteyi kontrol eder (meyil, trim, serbest yüzey); balast düzeltmesi değerlendirilir."),
+  S(1,"Reports to company/DPA simulated; abandon ship preparations considered if not controlled.","Şirket/DPA'ya raporlar canlandırılır; kontrol edilemezse terk hazırlığı değerlendirilir."),
+  S(1,"Stand down and debrief.","Talim sonu ve değerlendirme.")],
+ equip:T("Bilge and emergency bilge pumps, damage control kit (plugs, wedges, clamps, cement box), sounding tapes, loading computer, UHF radios.","Sintine ve acil sintine pompaları, hasar kontrol seti (tıpa, takoz, kelepçe, çimento kasası), iskandil şeritleri, yükleme bilgisayarı, UHF telsizler.")}}
+
+const COL_SC=[
+ T("Collision with a fishing vessel on the starboard side in restricted visibility.","Kısıtlı görüşte sancak bordada bir balıkçı teknesiyle çatışma."),
+ T("A crossing vessel strikes the port side at No.2 Hold.","Kesişen bir gemi 2 No.lu ambar hizasında iskele bordaya çarpar."),
+ T("At anchor, the vessel is struck by a dragging ship.","Demirdeyken demir tarayan bir gemi bize çarpar."),
+ T("Bow collision in a TSS, damage to the fore peak.","Trafik ayırım düzeninde baştan çatışma, baş pik hasarı.")];
+function buildCol(c){const s=pick(COL_SC,c.k);return{scen:s,steps:[
+  S(1,`Event: ${s.en}`,`Olay: ${s.tr}`),
+  S(1,"Engines stopped, general alarm and PA; Master on bridge; VDR data saved; watertight doors closed.","Makineler stop, genel alarm ve anons; Kaptan köprüüstünde; VDR verisi kaydedilir; su geçirmez kapılar kapatılır."),
+  S(1,"Crew mustered, headcount; injured persons checked.","Personel toplanır, sayım yapılır; yaralı olup olmadığı kontrol edilir."),
+  S(3,"Damage assessment: soundings in the damaged area, check for flooding, fire and pollution.","Hasar tespiti: hasarlı bölgede iskandil, su alma, yangın ve kirlilik kontrolü."),
+  S(2,"Contact with the other vessel on VHF; assistance offered (SOLAS V/33); ship particulars exchanged.","Diğer gemiyle VHF'te temas; yardım teklif edilir (SOLAS V/33); gemi bilgileri karşılıklı verilir."),
+  S(2,"Stability checked by C/O; navigational warning and appropriate signals displayed.","2. Kaptan stabiliteyi kontrol eder; seyir uyarısı yapılır ve uygun işaretler verilir."),
+  S(1,"Reports simulated: DPA, flag state, MRCC/coastal state.","Raporlar canlandırılır: DPA, bayrak devleti, MRCC/kıyı devleti."),
+  S(1,"Stand down and debrief.","Talim sonu ve değerlendirme.")],
+ equip:T("VDR, sounding tapes, damage control kit, loading computer, VHF/UHF radios, SOPEP equipment, first aid kit.","VDR, iskandil şeritleri, hasar kontrol seti, yükleme bilgisayarı, VHF/UHF telsizler, SOPEP malzemeleri, ilk yardım çantası.")}}
+
+const ME_SC=[
+ T("Total blackout at sea after a generator trip.","Jeneratör atması sonrası denizde tam karartma (blackout)."),
+ T("Main engine shutdown due to low lube oil pressure in coastal waters.","Kıyı sularında düşük yağlama yağı basıncı nedeniyle ana makine durması."),
+ T("Blackout during manoeuvring in the port approach.","Liman yaklaşmasında manevra sırasında blackout."),
+ T("Main engine fuel pump failure in a TSS.","Trafik ayırım düzeninde ana makine yakıt pompası arızası.")];
+function buildMe(c){const s=pick(ME_SC,c.k);return{scen:s,steps:[
+  S(1,`Event: ${s.en}`,`Olay: ${s.tr}`),
+  S(1,"Emergency generator starts automatically and supplies the emergency switchboard (within 45 s); emergency lighting and bridge equipment confirmed.","Acil jeneratör otomatik devreye girer ve acil tabloyu besler (45 sn içinde); acil aydınlatma ve köprüüstü cihazları teyit edilir."),
+  S(1,"NUC signals displayed; Sécurité on VHF simulated; Master and C/E informed; forecastle party ready to anchor if depth allows.","NUC işaretleri verilir; VHF Sécurité canlandırılır; Kaptan ve Başmühendis bilgilendirilir; derinlik uygunsa baş kasara ekibi demirlemeye hazır."),
+  S(3,"Engine room: cause investigated, standby generator started and connected, main switchboard restored, preferential trip consumers restarted.","Makine dairesi: sebep araştırılır, yedek jeneratör çalıştırılıp paralele alınır, ana tablo beslenir, tercihli atmadaki tüketiciler yeniden çalıştırılır."),
+  S(2,"Main engine restarted, steering pumps checked, speed increased gradually.","Ana makine yeniden çalıştırılır, dümen pompaları kontrol edilir, hız kademeli artırılır."),
+  S(1,"NUC signals lowered, Sécurité cancelled.","NUC işaretleri indirilir, Sécurité iptal edilir."),
+  S(1,"Stand down, debrief; entries in deck and engine log books.","Talim sonu, değerlendirme; güverte ve makine jurnallerine kayıt.")],
+ equip:T("Emergency generator, emergency switchboard, NUC signals, VHF/UHF radios, anchoring equipment.","Acil jeneratör, acil tablo, NUC işaretleri, VHF/UHF telsizler, demirleme donanımı.")}}
+
+const DRILLS={
+ fire:{en:"Fire Drill",tr:"Yangın Talimi",months:ALL,fq:"PW",build:buildFire},
+ abandon:{en:"Abandon Ship / Boat Drill",tr:"Gemi Terk / Filika Talimi",months:ALL,fq:"PW",xm:[2,5,8,11],build:buildAbandon},
+ steering:{en:"Emergency Steering Drill",tr:"Acil Durum Dümen Talimi",months:[0,3,6,9],fq:"X",build:buildSteering},
+ mob:{en:"Man Overboard and Rescue of Injured Person Drill",tr:"Denize Adam Düştü ve Yaralı Kurtarma Talimi",months:[1,3,5,7,9,11],fq:"X",build:buildMob},
+ oil:{en:"Oil Spill Drill",tr:"Deniz Kirliliği Talimi",months:[2,5,8,11],fq:"X",build:buildOil},
+ davit:{en:"Davit Launched Liferaft Training",tr:"Mataforalı Can Salı Eğitimi",months:[1,4,7,10],fq:"X",build:buildDavit},
+ enclosed:{en:"Entry into Enclosed Spaces and Rescue Drill",tr:"Kapalı Mahalle Giriş ve Adam Kurtarma Talimi",months:[0,2,4,6,8,10],fq:"X",build:buildEnc},
+ grounding:{en:"Grounding Drill",tr:"Karaya Oturma Talimi",months:[0,6],fq:"X",build:buildGround},
+ flooding:{en:"Flooding Drill",tr:"Su Alma Talimi",months:[0,6],fq:"X",build:buildFlood},
+ collision:{en:"Collision Drill",tr:"Çatışma Talimi",months:[2,8],fq:"X",build:buildCol},
+ me:{en:"Damage to M/E and Power Drill",tr:"M/E ve Elektrik Sistemine Hasar Talimi",months:[5,11],fq:"X",build:buildMe}
+};
+
+/* ---------------- TRAINING ---------------- */
+const P=(en,tr)=>[en,tr];
+const TOPICS=[
+ {t:T("SMS Safety Management System","EYS Emniyetli Yönetim Sistemi"),p:[P("Purpose of the ISM Code and the company SMS","ISM Kodu ve şirket EYS'nin amacı"),P("Safety and environmental policy; DPA and how to contact","Emniyet ve çevre politikası; DPA ve iletişim bilgileri"),P("Master's overriding authority and responsibilities","Kaptanın üstün yetkisi ve sorumlulukları"),P("Reporting of non-conformities, accidents and near-misses","Uygunsuzluk, kaza ve ramak kala raporlaması")],d:[P("Locate SMS manuals and forms on board","Gemideki EYS el kitapları ve formların yerini gösterme"),P("Fill in a near-miss report from a real example","Gerçek bir örnekten ramak kala raporu doldurma")],q:[P("Who is the DPA and how do you contact them?","DPA kimdir, nasıl ulaşılır?"),P("What is a non-conformity and how is it reported?","Uygunsuzluk nedir, nasıl raporlanır?")]},
+ {t:T("SCBA Self Contained Breathing Apparatus & Fireman Outfit","Solunum Seti ve İtfaiyeci Donanımı"),p:[P("Parts of SCBA: cylinder, regulator, face mask, harness","SCBA parçaları: tüp, regülatör, maske, kemer takımı"),P("Pre-use checks: pressure, leak test, low-pressure whistle","Kullanım öncesi kontroller: basınç, sızdırmazlık, düşük basınç düdüğü"),P("Working duration and BA control board","Çalışma süresi ve SCBA kontrol panosu"),P("Fireman's outfit: suit, boots, gloves, helmet, lamp, axe, lifeline","İtfaiyeci donanımı: elbise, çizme, eldiven, baret, fener, balta, can halatı")],d:[P("Don SCBA and fireman's outfit against the clock","Süre tutarak SCBA ve itfaiyeci donanımı giyme"),P("Cylinder change and recharging with the compressor","Tüp değişimi ve kompresörle doldurma")],q:[P("At what pressure does the warning whistle sound?","Uyarı düdüğü hangi basınçta öter?"),P("How is the working duration calculated?","Çalışma süresi nasıl hesaplanır?")]},
+ {t:T("EPIRBs & other Emergency Communication Equipment","EPIRB ve diğer Acil Durum Haberleşme Cihazları"),p:[P("EPIRB: 406 MHz, COSPAS-SARSAT, GNSS position","EPIRB: 406 MHz, COSPAS-SARSAT, GNSS mevki"),P("Float-free arrangement, HRU and battery expiry dates","Serbest yüzme düzeni, HRU ve batarya son kullanma tarihleri"),P("SART / AIS-SART and portable GMDSS VHF","SART / AIS-SART ve portatif GMDSS VHF"),P("Monthly tests and cancelling a false alert","Aylık testler ve yanlış alarmın iptali")],d:[P("Check EPIRB, HRU and battery dates on the monkey island","Pusula üstünde EPIRB, HRU ve batarya tarihlerini kontrol etme"),P("SART self-test and its display on radar","SART kendi kendine test ve radarda görüntüsü")],q:[P("How do you cancel a false distress alert?","Yanlış tehlike çağrısı nasıl iptal edilir?"),P("Who brings the EPIRB and SART to the survival craft?","EPIRB ve SART'ı can kurtarma aracına kim getirir?")]},
+ {t:T("Entering Enclosed Spaces","Kapalı Mahalle Giriş"),p:[P("Definition and examples of enclosed spaces on board","Gemideki kapalı mahallerin tanımı ve örnekleri"),P("Permit to work and risk assessment","Çalışma izni ve risk değerlendirmesi"),P("Atmosphere testing: O2 20.9%, LEL, toxic gases","Atmosfer ölçümü: O2 %20,9, LEL, zehirli gazlar"),P("Ventilation, attendant, communication, rescue equipment","Havalandırma, gözcü, haberleşme, kurtarma ekipmanı")],d:[P("Bump-test the gas detector and take readings at a tank entrance","Gaz ölçeri test edip tank girişinde ölçüm alma"),P("Rig the tripod and rescue harness","Tripod ve kurtarma kemerini kurma")],q:[P("What is the safe oxygen level for entry?","Giriş için emniyetli oksijen seviyesi nedir?"),P("What must the attendant do if the entrant collapses?","İçerideki kişi yığılırsa gözcü ne yapmalı?")]},
+ {t:T("Vessel Collision or Grounding Response","Gemi Çatışması veya Oturmasına Müdahale"),p:[P("Immediate actions: stop engine, alarm, WTDs, VDR save","İlk hareketler: makine stop, alarm, su geçirmez kapılar, VDR kaydı"),P("Damage assessment and soundings","Hasar tespiti ve iskandil"),P("Stability and hull stress checks","Stabilite ve gövde gerilme kontrolü"),P("Reporting, SOPEP and required signals","Raporlama, SOPEP ve gerekli işaretler")],d:[P("Sound all tanks and record results","Tüm tankları iskandil edip kaydetme"),P("Locate damage control equipment: plugs, wedges, cement box","Hasar kontrol malzemelerini gösterme: tıpa, takoz, çimento kasası")],q:[P("Which signals are shown when aground?","Karaya oturunca hangi işaretler verilir?"),P("Why is VDR data saved?","VDR verisi neden kaydedilir?")]},
+ {t:T("Search and Rescue Assistance","Arama Kurtarma Yardımı"),p:[P("Obligation to assist: SOLAS V/33","Yardım yükümlülüğü: SOLAS V/33"),P("IAMSAR Manual Vol. III on board","Gemideki IAMSAR Cilt III"),P("Search patterns: expanding square, sector, parallel track","Arama düzenleri: genişleyen kare, sektör, paralel hat"),P("Communication with MRCC and On-Scene Coordinator","MRCC ve olay yeri koordinatörü ile haberleşme")],d:[P("Plot an expanding square search on the chart","Haritada genişleyen kare araması çizme"),P("Rig a scrambling net and rescue sling","Tırmanma ağı ve kurtarma askısı hazırlama")],q:[P("When is the expanding square search used?","Genişleyen kare araması ne zaman kullanılır?"),P("Name the distress frequencies (VHF 16, DSC 70, 2182 kHz)","Tehlike frekanslarını sayınız (VHF 16, DSC 70, 2182 kHz)")]},
+ {t:T("Portable Fire Extinguishers","Taşınabilir Yangın Söndürücüler"),p:[P("Fire classes A, B, C, D, F and electrical","Yangın sınıfları A, B, C, D, F ve elektrik"),P("Types: water, foam, dry powder, CO2 and their use","Türler: su, köpük, kuru kimyevi toz, CO2 ve kullanımları"),P("Operation: pull pin, aim at base, squeeze, sweep","Kullanım: pimi çek, ateşin dibine tut, sık, süpür"),P("Locations, inspection tags and annual service","Yerleri, kontrol etiketleri ve yıllık servis")],d:[P("Discharge a training extinguisher on a practice fire","Eğitim söndürücüsüyle tatbikat yangınına müdahale"),P("Round of extinguishers: gauges, seals and tags","Söndürücü turu: manometre, mühür ve etiketler")],q:[P("Which extinguisher for an electrical fire?","Elektrik yangınında hangi söndürücü?"),P("Why not water on an oil fire?","Yağ yangınına neden su sıkılmaz?")]},
+ {t:T("TPA, Ring Buoys, Lifejackets and Exposure Suits","Isı Korumalı Elbise, Can Simidi, Can Yeleği ve Koruyucu Giysi"),p:[P("Lifejacket donning, light, whistle, reflective tape","Can yeleği giyimi, ışık, düdük, reflektif bant"),P("Immersion suit sizes and donning within 2 minutes","Isı korumalı elbise bedenleri ve 2 dakikada giyme"),P("Thermal protective aids in survival craft","Can kurtarma araçlarındaki TPA"),P("Lifebuoys with light, smoke signal and line","Işıklı, duman işaretli ve halatlı can simitleri")],d:[P("Immersion suit donning race under 2 minutes","2 dakika altında ısı korumalı elbise giyme yarışı"),P("Inspect lifebuoys, lights and smoke signals around the ship","Gemi etrafındaki can simidi, ışık ve duman işaretlerini kontrol etme")],q:[P("How long may donning an immersion suit take?","Isı korumalı elbise giyme süresi en fazla ne kadar?"),P("Where are the lifebuoys with smoke signals?","Duman işaretli can simitleri nerede?")]},
+ {t:T("Flares and other Emergency Signals","Maytaplar ve diğer Acil Durum İşaretleri"),p:[P("Rocket parachute flares (min. 12 on bridge)","Paraşütlü roket maytaplar (köprüüstünde en az 12)"),P("Hand flares and buoyant smoke signals","El maytapları ve yüzer duman işaretleri"),P("Safe firing: downwind, held high, away from body","Emniyetli ateşleme: rüzgâraltı, yukarıda, vücuttan uzak"),P("Distress signals, COLREG Annex IV; expiry dates","Tehlike işaretleri, COLREG Ek IV; son kullanma tarihleri")],d:[P("Demonstrate firing procedure with an expired/dummy flare","Süresi geçmiş/eğitim maytabıyla ateşleme gösterimi"),P("Check pyrotechnic expiry dates in the lifeboat","Filikadaki piroteknik son kullanma tarihlerini kontrol etme")],q:[P("How many rocket parachute flares are on the bridge?","Köprüüstünde kaç paraşütlü roket var?"),P("Name three distress signals from Annex IV","Ek IV'ten üç tehlike işareti sayınız")]},
+ {t:T("Pollution Response","Kirlilikle Mücadele"),p:[P("MARPOL Annexes I to VI overview","MARPOL Ek I–VI genel bakış"),P("SOPEP contents and contact list","SOPEP içeriği ve iletişim listesi"),P("Spill response sequence: stop, contain, clean, report","Dökülme müdahalesi: durdur, çevrele, temizle, raporla"),P("Reporting obligations to coastal state","Kıyı devletine raporlama yükümlülüğü")],d:[P("SOPEP locker inventory check","SOPEP dolabı envanter kontrolü"),P("Deploy absorbent booms around a tank vent","Bir tank havalandırması etrafına emici bariyer serme")],q:[P("What is the first action on an oil spill?","Yağ dökülmesinde ilk hareket nedir?"),P("Who is on the SOPEP contact list?","SOPEP iletişim listesinde kimler var?")]},
+ {t:T("Loss of Steering","Dümen Arızası"),p:[P("Common causes of steering failure","Dümen arızasının yaygın nedenleri"),P("Emergency steering procedure posted in steering gear room","Dümen dairesinde asılı acil dümen prosedürü"),P("Communication between bridge and steering gear room","Köprüüstü ile dümen dairesi arası haberleşme"),P("SOLAS V/26 tests and drills","SOLAS V/26 testleri ve talimleri")],d:[P("Changeover to local steering in the steering gear room","Dümen dairesinde lokal dümene geçiş"),P("Test the sound-powered telephone and VHF link","Ses gücüyle çalışan telefon ve VHF bağlantısını test etme")],q:[P("How often is the emergency steering drill?","Acil dümen talimi ne sıklıkla yapılır?"),P("Which signals for a vessel not under command?","Kumanda altında olmayan gemi hangi işaretleri verir?")]},
+ {t:T("Ballast Water Exchange","Balast Suyu Değişimi"),p:[P("BWM Convention and D-2 standard","BWM Sözleşmesi ve D-2 standardı"),P("Ballast water treatment system operation","Balast suyu arıtma sistemi kullanımı"),P("Ballast Water Management Plan and Record Book","Balast Suyu Yönetim Planı ve Kayıt Defteri"),P("Stability and stress during exchange; safety","Değişim sırasında stabilite ve gerilme; emniyet")],d:[P("BWTS start-up and alarm review","BWTS çalıştırma ve alarmların incelenmesi"),P("Make a sample ballast record entry","Örnek balast kaydı yapma")],q:[P("What does the D-2 standard require?","D-2 standardı neyi gerektirir?"),P("Where are ballast operations recorded?","Balast operasyonları nereye kaydedilir?")]},
+ {t:T("Fire Main / Fire Fighting","Yangın ve Yangınla Mücadele"),p:[P("Main and emergency fire pumps, isolating valves","Ana ve acil yangın pompaları, izolasyon valfleri"),P("Hoses, jet/spray nozzles and hydrants","Hortumlar, jet/sprey lanslar ve yangın musluklar"),P("International shore connection","Uluslararası sahil bağlantısı"),P("Fire control plan and boundary cooling","Yangın kontrol planı ve sınır soğutması")],d:[P("Start emergency fire pump and check pressure at the highest hydrant","Acil yangın pompasını çalıştırıp en yüksek muslukta basınç kontrolü"),P("Connect the international shore connection","Uluslararası sahil bağlantısını takma")],q:[P("Where is the international shore connection kept?","Uluslararası sahil bağlantısı nerede?"),P("How is the emergency fire pump started?","Acil yangın pompası nasıl çalıştırılır?")]},
+ {t:T("Launching Lifeboats and Liferafts","Filika ve Can Sallarını İndirme"),p:[P("Launching sequence and gravity davits","İndirme sırası ve gravite davitler"),P("Winch brake, on-load and off-load release","Vinç freni, yüklü ve yüksüz kanca açma"),P("Liferaft HRU, weak link and painter","Can salı HRU, zayıf halka ve pruva halatı"),P("Throwing and inflating a liferaft","Can salını atma ve şişirme")],d:[P("Lower lifeboat to embarkation deck and reset","Filikayı biniş güvertesine indirip geri alma"),P("Explain HRU and painter weak link on a raft","Bir salda HRU ve zayıf halkayı anlatma")],q:[P("When is on-load release used?","Yüklü kanca açma ne zaman kullanılır?"),P("What does the HRU do?","HRU ne işe yarar?")]},
+ {t:T("First Aid (inc. CPR)","İlk Yardım"),p:[P("Primary survey: danger, response, airway, breathing, circulation","Birincil değerlendirme: tehlike, bilinç, hava yolu, solunum, dolaşım"),P("CPR 30 compressions : 2 breaths","CPR 30 bası : 2 soluk"),P("Bleeding control, shock, burns (cool 20 min), fractures","Kanama kontrolü, şok, yanık (20 dk soğutma), kırıklar"),P("Medical chest and radio medical advice (TMAS)","Tıbbi ecza dolabı ve telsizle tıbbi danışma (TMAS)")],d:[P("CPR practice on a manikin","Manken üzerinde CPR uygulaması"),P("Splinting and bandaging practice","Atel ve bandaj uygulaması")],q:[P("What is the CPR compression-to-breath ratio?","CPR bası/soluk oranı nedir?"),P("How long should a burn be cooled?","Yanık ne kadar süre soğutulmalı?")]},
+ {t:T("Man Overboard Response & Recovery of Persons from the Water","Denize Adam Düşmesine Müdahale & Sudan Personeli Kurtarma"),p:[P("Immediate actions: shout, lifebuoy, MOB button, alarm","İlk hareketler: bağır, can simidi, MOB butonu, alarm"),P("Williamson, Anderson and Scharnow turns","Williamson, Anderson ve Scharnow dönüşleri"),P("Rescue boat and ship-side recovery methods","Kurtarma botu ve bordadan kurtarma yöntemleri"),P("Hypothermia treatment","Hipotermi tedavisi")],d:[P("Rescue boat readiness check","Kurtarma botu hazırlık kontrolü"),P("Recovery practice with the rescue sling","Kurtarma askısıyla kurtarma uygulaması")],q:[P("What is the sound signal for man overboard?","Denize adam düştü ses işareti nedir?"),P("When is the Scharnow turn used?","Scharnow dönüşü ne zaman kullanılır?")]},
+ {t:T("Loss of Propulsion","Makine Arızası"),p:[P("Causes of propulsion loss and blackout","Sevk kaybı ve blackout nedenleri"),P("Emergency generator and blackout recovery","Acil jeneratör ve blackout sonrası toparlanma"),P("NUC signals and VHF warnings","NUC işaretleri ve VHF uyarıları"),P("Anchoring in shallow water and drift estimation","Sığ suda demirleme ve sürüklenme tahmini")],d:[P("Manual start of the emergency generator","Acil jeneratörün manuel çalıştırılması"),P("Walk through blackout recovery steps in the ECR","Kontrol odasında blackout toparlanma adımlarını inceleme")],q:[P("Within how many seconds must the emergency generator supply power?","Acil jeneratör kaç saniyede beslemeli?"),P("What is the NUC day signal?","NUC gündüz işareti nedir?")]},
+ {t:T("Waste / Garbage Management","Atık / Çöp Yönetimi"),p:[P("MARPOL Annex V categories and discharge rules","MARPOL Ek V kategorileri ve boşaltma kuralları"),P("Garbage Management Plan and Record Book","Çöp Yönetim Planı ve Kayıt Defteri"),P("Segregation, bins and placards","Ayrıştırma, kutular ve levhalar"),P("Incinerator rules and port reception receipts","İnsinaratör kuralları ve liman kabul makbuzları")],d:[P("Inspect segregation bins and labels","Ayrıştırma kutuları ve etiketleri kontrol etme"),P("Make a Garbage Record Book entry","Çöp Kayıt Defteri'ne örnek kayıt")],q:[P("Can plastics ever be discharged at sea?","Plastik denize hiç atılabilir mi?"),P("Where are garbage operations recorded?","Çöp operasyonları nereye kaydedilir?")]},
+ {t:T("Fixed Fire Extinguishing Systems","Sabit Yangın Söndürme Sistemleri"),p:[P("CO2 system for engine room and holds","Makine dairesi ve ambarlar için CO2 sistemi"),P("Release procedure and pre-discharge alarm","Boşaltma prosedürü ve ön uyarı alarmı"),P("Evacuation and headcount before release","Boşaltmadan önce tahliye ve sayım"),P("Local water mist and fire detection","Lokal su sisi ve yangın algılama")],d:[P("Walk through CO2 room release instructions (no release)","CO2 odasında boşaltma talimatını inceleme (boşaltma yok)"),P("Test local water mist in test mode","Lokal su sisini test modunda deneme")],q:[P("What must be done before CO2 release?","CO2 boşaltmadan önce ne yapılmalı?"),P("How many cylinders are needed for the engine room?","Makine dairesi için kaç tüp gerekir?")]},
+ {t:T("Lifeboat, Liferaft, Rescue Boat Emergency Equipment","Filika, Can Salı, Kurtarma Botu Acil Durum Ekipmanı"),p:[P("LSA Code equipment list","LSA Kodu ekipman listesi"),P("Rations, water, first aid kit, signals, fishing kit","Erzak, su, ilk yardım, işaretler, balıkçılık seti"),P("Thermal protective aids and seasickness tablets","TPA ve deniz tutması hapları"),P("Engine, fuel and inspection intervals","Motor, yakıt ve kontrol aralıkları")],d:[P("Lifeboat inventory check against the list","Listeye göre filika envanter kontrolü"),P("Check expiry dates of water, food and pyrotechnics","Su, erzak ve piroteknik son kullanma tarihlerini kontrol")],q:[P("How much water per person is carried in a lifeboat?","Filikada kişi başı ne kadar su bulunur?"),P("What is a TPA?","TPA nedir?")]},
+ {t:T("Line Throwing Apparatus","Halat Atma Aparatı"),p:[P("Components: rockets and lines (4 sets)","Parçalar: roketler ve halatlar (4 set)"),P("Range at least 230 m","Menzil en az 230 m"),P("Firing procedure and safety","Ateşleme prosedürü ve emniyet"),P("Uses, storage and expiry dates","Kullanım alanları, muhafaza ve son kullanma tarihleri")],d:[P("Aiming and firing procedure with a dummy unit","Eğitim ünitesiyle nişan alma ve ateşleme gösterimi"),P("Inspect the unit and check expiry","Üniteyi kontrol edip son kullanma tarihine bakma")],q:[P("What is the minimum range?","Asgari menzil nedir?"),P("What must be checked before firing?","Ateşlemeden önce neler kontrol edilmeli?")]},
+ {t:T("Response to Spills of Hazardous Materials onboard","Gemiden Tehlikeli Madde Dökülmesine Müdahale"),p:[P("Safety Data Sheets for chemicals on board","Gemideki kimyasalların güvenlik bilgi formları (SDS)"),P("PPE selection","Kişisel koruyucu donanım seçimi"),P("Spill kit and containment","Dökülme seti ve çevreleme"),P("IMDG EmS and disposal","IMDG EmS ve bertaraf")],d:[P("Locate the SDS file and read one for a stored chemical","SDS dosyasını bulup depodaki bir kimyasalınkini okuma"),P("Don a chemical suit","Kimyasal elbise giyme")],q:[P("Where are the SDS kept?","SDS'ler nerede saklanır?"),P("What is the first action on a chemical spill?","Kimyasal dökülmede ilk hareket nedir?")]},
+ {t:T("How to Fight Fires onboard","Gemide Nasıl Yangınla Mücadele Edilir"),p:[P("Fire triangle and tetrahedron","Yangın üçgeni ve dörtyüzlüsü"),P("Extinguishing methods: cooling, smothering, starving","Söndürme yöntemleri: soğutma, boğma, yakıtı kesme"),P("Team organisation and communication","Ekip organizasyonu ve haberleşme"),P("Boundary cooling and safe entry","Sınır soğutması ve emniyetli giriş")],d:[P("Hose team practice: jet/spray, advance and retreat","Hortum ekibi uygulaması: jet/sprey, ilerleme ve geri çekilme"),P("Door entry technique","Kapıdan giriş tekniği")],q:[P("Name the three extinguishing methods","Üç söndürme yöntemini sayınız"),P("Why is boundary cooling needed?","Sınır soğutması neden gerekir?")]},
+ {t:T("Oily Bilge Water Management","Yağlı Sintine Suyu Yönetimi"),p:[P("MARPOL Annex I requirements","MARPOL Ek I gereklilikleri"),P("OWS, 15 ppm alarm and bilge holding tank","Yağlı su seperatörü, 15 ppm alarmı ve sintine tutma tankı"),P("Oil Record Book Part I entries","Yağ Kayıt Defteri Bölüm I kayıtları"),P("Prohibited bypass (magic pipe), sludge disposal","Yasak bypass (magic pipe), çamur bertarafı")],d:[P("OWS operation and 15 ppm alarm test","OWS çalıştırma ve 15 ppm alarm testi"),P("Review Oil Record Book entry codes","Yağ Kayıt Defteri kodlarının incelenmesi")],q:[P("What is the maximum oil content for discharge?","Boşaltma için azami yağ oranı nedir?"),P("Why is a bypass strictly forbidden?","Bypass neden kesinlikle yasaktır?")]},
+ {t:T("Oil Spill Kit & Chemical Suits","Çevre Kirliliği Temizlik Malzemeleri ve Kimyasal Giysiler"),p:[P("SOPEP locker contents","SOPEP dolabı içeriği"),P("Chemical suit types and donning","Kimyasal elbise türleri ve giyimi"),P("Decontamination after use","Kullanım sonrası dekontaminasyon"),P("Replenishment and disposal of used absorbents","Malzeme tamamlama ve kullanılmış emicilerin bertarafı")],d:[P("SOPEP inventory check and sign-off","SOPEP envanter kontrolü ve imza"),P("Don and doff a chemical suit with a buddy","Eşli olarak kimyasal elbise giyip çıkarma")],q:[P("Where are the SOPEP lockers?","SOPEP dolapları nerede?"),P("How are used absorbents disposed of?","Kullanılmış emiciler nasıl bertaraf edilir?")]},
+ {t:T("Stretcher & Medical Resuscitator","Sedye ve Medikal Suni Solunum Cihazı"),p:[P("Stretcher types: Neil Robertson, basket, scoop","Sedye türleri: Neil Robertson, sepet, kepçe"),P("Securing a casualty and lifting vertically/horizontally","Kazazedeyi bağlama ve dikey/yatay kaldırma"),P("Oxygen resuscitator: cylinder, mask, flow rate","Oksijen resüsitatörü: tüp, maske, akış hızı"),P("Storage and maintenance","Muhafaza ve bakım")],d:[P("Secure a volunteer in the Neil Robertson stretcher and lift","Bir gönüllüyü Neil Robertson sedyeye bağlayıp kaldırma"),P("Assemble the resuscitator and check oxygen","Resüsitatörü kurup oksijeni kontrol etme")],q:[P("When is vertical lifting used?","Dikey kaldırma ne zaman kullanılır?"),P("How is the oxygen cylinder content checked?","Oksijen tüpü doluluğu nasıl kontrol edilir?")]}
+];
+
+function buildTraining(idx,week){
+  const tp=TOPICS[idx], cyc=week>26?1:0;
+  const pts=tp.p.map(x=>x[0]).join("; "), ptsT=tp.p.map(x=>x[1]).join("; ");
+  const d=tp.d[cyc], q=tp.q[cyc];
+  return {
+    sub:T(`Week ${week} · Topic ${idx+1} of 26 · ${cyc?"Second cycle (weeks 27–52)":"First cycle (weeks 1–26)"}`,`Hafta ${week} · Konu ${idx+1}/26 · ${cyc?"İkinci tur (27–52. haftalar)":"Birinci tur (1–26. haftalar)"}`),
+    scen:T(`Training on ${tp.t.en}.`,`${tp.t.tr} konulu eğitim.`),
+    steps:[
+      S(1,`Opening: attendance sheet signed, objectives of "${tp.t.en}" explained.`,`Açılış: katılım listesi imzalanır, "${tp.t.tr}" eğitiminin amaçları anlatılır.`),
+      S(3.5,`Theory: ${pts}.`,`Teori: ${ptsT}.`),
+      S(3,`Practical: ${d[0]}.`,`Uygulama: ${d[1]}.`),
+      S(1.5,`Questions and assessment: ${q[0]}`,`Soru-cevap ve değerlendirme: ${q[1]}`),
+      S(1,"Closing: feedback collected, training record completed and signed.","Kapanış: geri bildirim alınır, eğitim kaydı doldurulup imzalanır.")
+    ],
+    equip:T("SMS manual, training material and the equipment used in the practical part.","EYS el kitabı, eğitim materyali ve uygulamada kullanılan ekipman.")
+  };
+}
+
+/* ---------------- DATE / TIME ---------------- */
+function isoWeek(d){const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const day=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-day);const y0=new Date(Date.UTC(t.getUTCFullYear(),0,1));return Math.ceil(((t-y0)/864e5+1)/7)}
+const pad=n=>String(n).padStart(2,"0");
+const toMin=s=>{const [h,m]=(s||"0:0").split(":").map(Number);return h*60+m};
+const fmt=m=>{m=((Math.round(m)%1440)+1440)%1440;return pad(Math.floor(m/60))+":"+pad(m%60)};
+function timed(steps,start,end){
+  let dur=end-start; if(dur<=0) dur+=1440;
+  const tot=steps.reduce((a,s)=>a+s.w,0); let acc=0;
+  return steps.map(s=>{const t=start+dur*acc/tot; acc+=s.w; return {...s,time:fmt(Math.round(t))}});
+}
+
+/* ---------------- STATE / UI ---------------- */
+const $=id=>document.getElementById(id);
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+let tab="drill", drillId="fire", areaOverride="auto", xm=false, topicOverride="auto";
+
+const today=new Date(); $("date").value=today.getFullYear()+"-"+pad(today.getMonth()+1)+"-"+pad(today.getDate());
+["ship","cond","pos","wx"].forEach(k=>{const v=store.get("tp_"+k); if(v) $(k).value=v;});
+if(store.get("tp_ship")) $("shipDetails").open=false;
+
+$("drillSel").innerHTML=Object.entries(DRILLS).map(([k,d])=>`<option value="${k}">${d.tr} · ${d.en}</option>`).join("");
+$("topicSel").innerHTML=`<option value="auto">Otomatik (haftaya göre)</option>`+TOPICS.map((t,i)=>`<option value="${i}">${i+1}. ${t.t.tr}</option>`).join("");
+
+function getDate(){const v=$("date").value; if(!v) return new Date(); const [y,m,d]=v.split("-").map(Number); return new Date(y,m-1,d);}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+let current=null;
+function render(){
+  const d=getDate(), wk=isoWeek(d), mo=d.getMonth();
+  const dateStr=pad(d.getDate())+"."+pad(mo+1)+"."+d.getFullYear();
+  $("weekInfo").textContent=`${MONTHS_TR[mo]} ${d.getFullYear()} · ISO Hafta ${wk} · Eğitim konusu ${((wk-1)%26)+1}/26`;
+  const start=toMin($("start").value), end=toMin($("end").value);
+  let dur=end-start; if(dur<=0) dur+=1440;
+
+  let r, title, kind;
+  if(tab==="drill"){
+    $("monthLabel").textContent=`${MONTHS_TR[mo]} ayının talimleri`;
+    const due=Object.entries(DRILLS).filter(([k,x])=>x.months.includes(mo));
+    $("monthChips").innerHTML=due.map(([k,x])=>{const isXm=x.xm&&x.xm.includes(mo);return `<button class="chip" data-d="${k}" aria-pressed="${k===drillId}">${x.tr}<span class="fq">${isXm?"PW/XM":x.fq==="PW"?"HAFTALIK":"AYLIK"}</span></button>`}).join("");
+    $("drillSel").value=drillId;
+    const D=DRILLS[drillId];
+    const scheduled=D.months.includes(mo);
+    const k=scheduled?D.months.indexOf(mo):mo;
+    const autoArea=(wk-1)%4, area=areaOverride==="auto"?autoArea:+areaOverride;
+    const isXmMonth=!!(D.xm&&D.xm.includes(mo));
+    let opts="";
+    if(!scheduled) opts+=`<div class="warn">Bu talim ${MONTHS_TR[mo]} ayının planında yok. Yine de senaryo üretildi.</div>`;
+    if(drillId==="fire") opts+=`<label>Yangın bölgesi<select id="areaSel"><option value="auto">Otomatik: ${FIRE_AREAS[autoArea].n.tr} (Hafta ${wk})</option>${FIRE_AREAS.map((a,i)=>`<option value="${i}">${i+1}. ${a.n.tr}</option>`).join("")}</select></label><div class="note">Plana göre bölgeler haftalık sırayla döner: 1. Ambarlar, 2. Yaşam Mahalli, 3. Makine Dairesi, 4. Güverte.</div>`;
+    if(drillId==="abandon"){ if(isXmMonth) opts+=`<div class="warn">${MONTHS_TR[mo]} XM ayı: bu ay içinde tüm filikalar suya indirilip seyir yapılacak ve jurnale kaydedilecek.</div>`;
+      opts+=`<label class="check"><input type="checkbox" id="xmChk" ${xm?"checked":""}> Bu talimde filikalar suya indirilecek (XM)</label>`; }
+    $("drillOpts").innerHTML=opts;
+    if($("areaSel")) $("areaSel").value=areaOverride;
+    r=D.build({week:wk,month:mo,k,area,xm:drillId==="abandon"&&xm});
+    title=T(D.en,D.tr); kind=T("DRILL RECORD","TALİM KAYDI");
+    if(!r.sub) r.sub=T(`${MONTHS_EN[mo]} · Week ${wk}${scheduled?` · Scenario ${k+1}`:""}`,`${MONTHS_TR[mo]} · Hafta ${wk}${scheduled?` · Senaryo ${k+1}`:""}`);
+  } else {
+    const idx=topicOverride==="auto"?(wk-1)%26:+topicOverride;
+    $("topicSel").value=topicOverride;
+    $("topicNote").textContent=`Takvime göre ${wk}. hafta konusu: ${((wk-1)%26)+1}. ${TOPICS[(wk-1)%26].t.tr}`;
+    r=buildTraining(idx,wk); title=TOPICS[idx].t; kind=T("TRAINING RECORD","EĞİTİM KAYDI");
+  }
+  const steps=timed(r.steps,start,end);
+  const remarks=tab==="drill"
+    ?T("Drill carried out satisfactorily. All crew participated and performed their duties as per muster list.","Talim başarıyla icra edildi. Tüm personel katıldı ve görev çizelgesine göre görevlerini yerine getirdi.")
+    :T("Training completed. All participants attended and signed the attendance sheet.","Eğitim tamamlandı. Tüm katılımcılar hazır bulundu ve katılım listesini imzaladı.");
+  current={kind,title,sub:r.sub,scen:r.scen,steps,equip:r.equip,remarks,dateStr,
+    time:`${fmt(start)}–${fmt(end)}`,dur,ship:$("ship").value.trim(),cond:$("cond").value.trim(),pos:$("pos").value.trim(),wx:$("wx").value.trim(),extra:$("extra").value.trim()};
+  $("shipEyebrow").textContent=(current.ship?current.ship+" · ":"")+"ISM · SOLAS III/19";
+
+  const c=current;
+  $("record").innerHTML=`
+   <div class="rhead">
+     <div class="eyebrow">${c.kind.en} / ${c.kind.tr}</div>
+     <h2 class="rtitle">${esc(c.title.en)}<span>${esc(c.title.tr)}</span></h2>
+     <div class="meta"><span>Tarih <b>${c.dateStr}</b></span><span>Saat <b>${c.time}</b></span><span>Süre <b>${c.dur} dk</b></span>${c.ship?`<span>Gemi <b>${esc(c.ship)}</b></span>`:""}</div>
+     <div class="meta"><span>${esc(c.sub.tr)}</span></div>
+   </div>
+   <div class="bi"><p><span class="lang">EN</span>${esc(c.scen.en)}</p><p><span class="lang">TR</span>${esc(c.scen.tr)}</p></div>
+   <ol class="tl">${c.steps.map(s=>`<li><time>${s.time}</time><div><div class="en">${esc(s.en)}</div><div class="tr">${esc(s.tr)}</div></div></li>`).join("")}<li><time>${fmt(end)}</time><div><div class="en">${tab==="drill"?"Drill completed.":"Training completed."}</div><div class="tr">${tab==="drill"?"Talim tamamlandı.":"Eğitim tamamlandı."}</div></div></li></ol>
+   <div class="bi"><p><span class="lang">EQUIPMENT</span>${esc(c.equip.en)}</p><p><span class="lang">EKİPMAN</span>${esc(c.equip.tr)}</p></div>`;
+}
+
+function buildText(lang){
+  const c=current, B=lang==="both", E=lang!=="tr", R=lang!=="en";
+  const L=(en,tr)=>B?`${en} / ${tr}`:(E?en:tr);
+  const V=o=>B?`${o.en} / ${o.tr}`:(E?o.en:o.tr);
+  const out=[];
+  out.push(L(c.kind.en,c.kind.tr));
+  if(c.ship) out.push(`${L("Vessel","Gemi")}: ${c.ship}`);
+  out.push(`${L("Date","Tarih")}: ${c.dateStr}   ${L("Time","Saat")}: ${c.time} LT (${c.dur} ${B?"min / dk":E?"min":"dk"})`);
+  out.push(`${tab==="drill"?L("Drill","Talim"):L("Training","Eğitim")}: ${V(c.title)}`);
+  out.push(`${L("Reference","Referans")}: ${V(c.sub)}`);
+  if(c.pos) out.push(`${L("Position","Mevki")}: ${c.pos}`);
+  if(c.wx) out.push(`${L("Weather","Hava")}: ${c.wx}`);
+  if(c.cond) out.push(`${L("Conducted by","Yöneten")}: ${c.cond}`);
+  out.push("");
+  out.push(L("SCENARIO","SENARYO")+":");
+  if(E) out.push((B?"EN: ":"")+c.scen.en);
+  if(R) out.push((B?"TR: ":"")+c.scen.tr);
+  out.push("");
+  out.push(L("SEQUENCE OF EVENTS","OLAY SIRASI")+":");
+  const endT=c.time.split("–")[1];
+  [...c.steps,{time:endT,en:tab==="drill"?"Drill completed.":"Training completed.",tr:tab==="drill"?"Talim tamamlandı.":"Eğitim tamamlandı."}].forEach(s=>{
+    if(B){out.push(`${s.time}  ${s.en}`);out.push(`       ${s.tr}`);}
+    else out.push(`${s.time}  ${E?s.en:s.tr}`);
+  });
+  out.push("");
+  out.push(L("EQUIPMENT USED","KULLANILAN EKİPMAN")+":");
+  if(E) out.push((B?"EN: ":"")+c.equip.en);
+  if(R) out.push((B?"TR: ":"")+c.equip.tr);
+  out.push("");
+  out.push(L("REMARKS","DEĞERLENDİRME")+":");
+  if(E) out.push((B?"EN: ":"")+c.remarks.en);
+  if(R) out.push((B?"TR: ":"")+c.remarks.tr);
+  if(c.extra) out.push((B?"Note / Not: ":E?"Note: ":"Not: ")+c.extra);
+  return out.join("\n");
+}
+
+let toastT;
+function toast(msg){const t=$("toast");t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,1800)}
+function copy(lang){
+  const txt=buildText(lang);
+  const fb=()=>{const f=$("fallback");f.hidden=false;f.value=txt;f.focus();f.select();toast("Metin seçildi, kopyala tuşuna bas");};
+  try{navigator.clipboard.writeText(txt).then(()=>{$("fallback").hidden=true;toast("Kopyalandı: "+(lang==="both"?"EN+TR":lang.toUpperCase()))},fb)}catch(e){fb()}
+}
+
+$("tabDrill").onclick=()=>{tab="drill";$("tabDrill").setAttribute("aria-selected","true");$("tabTrain").setAttribute("aria-selected","false");$("drillPanel").hidden=false;$("trainPanel").hidden=true;render()};
+$("tabTrain").onclick=()=>{tab="train";$("tabTrain").setAttribute("aria-selected","true");$("tabDrill").setAttribute("aria-selected","false");$("drillPanel").hidden=true;$("trainPanel").hidden=false;render()};
+$("monthChips").onclick=e=>{const b=e.target.closest("[data-d]");if(!b)return;drillId=b.dataset.d;areaOverride="auto";render()};
+$("drillSel").onchange=e=>{drillId=e.target.value;areaOverride="auto";render()};
+$("drillOpts").onchange=e=>{if(e.target.id==="areaSel")areaOverride=e.target.value;if(e.target.id==="xmChk")xm=e.target.checked;render()};
+$("topicSel").onchange=e=>{topicOverride=e.target.value;render()};
+["date","start","end","extra"].forEach(id=>$(id).addEventListener("input",render));
+["ship","cond","pos","wx"].forEach(id=>$(id).addEventListener("input",()=>{store.set("tp_"+id,$(id).value);render()}));
+$("cpBoth").onclick=()=>copy("both");$("cpEn").onclick=()=>copy("en");$("cpTr").onclick=()=>copy("tr");
+render();
+</script>
+
+<script>if("serviceWorker" in navigator){addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}</script>
+</body>
+</html>
