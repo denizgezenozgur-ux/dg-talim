@@ -79,6 +79,14 @@ details[open] summary{margin-bottom:12px}
 .tl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
 .tl li{display:grid;grid-template-columns:58px minmax(0,1fr);gap:10px;padding:10px 0;border-top:1px solid var(--line)}
 .tl li:first-child{border-top:0}
+.duties{display:grid;grid-template-columns:minmax(84px,auto) minmax(0,1fr);gap:0 12px;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.duties>div{padding:8px 10px;border-top:1px solid var(--line)}
+.duties>div:nth-child(-n+2){border-top:0}
+.duties .rk{font-family:var(--f-mono);font-size:12px;color:var(--orange);background:var(--bg)}
+.duties .rk small{display:block;color:var(--muted);font-size:11px}
+.duties .dt{font-size:14px}
+.duties .dt span{display:block;color:var(--muted);font-size:13px}
+.crewline{font-size:13px;color:var(--muted)}
 .tl time{font-family:var(--f-mono);font-size:15px;color:var(--orange);font-variant-numeric:tabular-nums;padding-top:1px}
 .tl .en{font-weight:500}
 .tl .tr{color:var(--muted);font-size:14px;margin-top:3px}
@@ -118,6 +126,7 @@ details[open] summary{margin-bottom:12px}
         <label>Mevki<input id="pos" placeholder="40°58'N 028°50'E / Limanda"></label>
         <label>Hava / Deniz<input id="wx" placeholder="NW 4, deniz 3, açık"></label>
       </div>
+      <p class="crewline">Personel (8): Master, C/O, 2/O, C/E, Oiler, AB-1, AB-2, Cook. Senaryolar ve görevler yalnızca bu kişilerle yazılır.</p>
     </details>
   </section>
 
@@ -155,38 +164,45 @@ const MONTHS_TR=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağ
 const MONTHS_EN=["January","February","March","April","May","June","July","August","September","October","November","December"];
 const ALL=[0,1,2,3,4,5,6,7,8,9,10,11];
 
+/* ---------------- CREW (8 persons on board) ---------------- */
+const CREW={MS:T("Master","Kaptan"),CO:T("C/O","2. Kaptan"),O2:T("2/O","2. Zabit"),CE:T("C/E","Başmühendis"),OL:T("Oiler","Yağcı"),AB1:T("AB-1","AB-1"),AB2:T("AB-2","AB-2"),CK:T("Cook","Aşçı")};
+const CREW_ORDER=["MS","CO","O2","CE","OL","AB1","AB2","CK"];
+const DU=o=>CREW_ORDER.map(k=>({k,en:o[k][0],tr:o[k][1]}));
+const nm=k=>CREW[k];
+const sub=(o,map)=>{let en=o.en,tr=o.tr;for(const [k,v] of Object.entries(map)){en=en.split("{"+k+"}").join(v.en);tr=tr.split("{"+k+"}").join(v.tr);}return T(en,tr)};
+
 /* ---------------- FIRE ---------------- */
 const FIRE_AREAS=[
 {n:T("Cargo Holds","Ambarlar"),
  locs:[T("No.1 Cargo Hold","1 No.lu Ambar"),T("No.2 Cargo Hold","2 No.lu Ambar"),T("No.3 Cargo Hold","3 No.lu Ambar"),T("No.4 Cargo Hold","4 No.lu Ambar"),T("No.5 Cargo Hold","5 No.lu Ambar"),T("No.3 Hold, hatch cover hydraulic area","3 No.lu Ambar, ambar kapağı hidrolik bölgesi"),T("No.2 Hold, bilge well area","2 No.lu Ambar, sintine kuyusu bölgesi"),T("No.4 Hold, tank top","4 No.lu Ambar, tank üstü"),T("No.1 Hold, forward bulkhead","1 No.lu Ambar, baş perde"),T("No.5 Hold, aft access trunk","5 No.lu Ambar, kıç giriş kuyusu"),T("No.2 Hold, ventilation trunk","2 No.lu Ambar, havalandırma kanalı"),T("No.4 Hold, access hatch","4 No.lu Ambar, giriş kapağı"),T("No.3 Hold, topside tank area","3 No.lu Ambar, üst yan tank bölgesi"),T("No.1 Hold, hatch coaming area","1 No.lu Ambar, mezarna bölgesi")],
  causes:[T("self-heating of cargo","yükün kendiliğinden ısınması"),T("hot work spark near the ventilator","havalandırma yakınında sıcak çalışma kıvılcımı"),T("electrical fault in hold lighting","ambar aydınlatmasında elektrik arızası"),T("hydraulic oil leak onto a hot surface","sıcak yüzeye hidrolik yağ sızıntısı"),T("discarded cigarette","atılan sigara izmariti")],
- finders:[T("The duty AB, sent after the smoke detection alarm on the bridge,","Köprüüstündeki duman dedektör alarmı üzerine gönderilen vardiya usta gemicisi"),T("The Bosun during his deck round","Güverte turundaki Lostromo"),T("The 3/O on fire patrol","Yangın devriyesindeki 3. Zabit")],
- isolate:T("Ventilators, vent flaps and access hatches of the hold closed and sealed; hold fans stopped, electrical supply to hold lighting isolated. Hatch covers kept CLOSED, the hold is not opened.","Ambarın vantilatörleri, havalandırma klapeleri ve giriş kapakları kapatılıp sızdırmaz hale getirilir; ambar fanları durdurulur, ambar aydınlatmasının elektriği kesilir. Ambar kapakları KAPALI tutulur, ambar açılmaz."),
- attack:T("Boundary cooling of hatch covers, coamings and adjacent bulkheads continued; temperatures checked every 15 minutes. Fixed CO2 system for the hold prepared: CO2 room manned, number of cylinders for this hold confirmed from the posted instructions. Release SIMULATED only.","Ambar kapakları, mezarnalar ve komşu perdelerde sınır soğutmasına devam edilir; sıcaklıklar 15 dakikada bir kontrol edilir. Ambar için sabit CO2 sistemi hazırlanır: CO2 odasına personel verilir, bu ambar için gereken tüp sayısı talimattan teyit edilir. Boşaltma yalnızca CANLANDIRILIR."),
+ finders:[T("AB-1, sent to check after the smoke detection alarm on the bridge,","Köprüüstündeki duman dedektör alarmı üzerine kontrole gönderilen AB-1"),T("The C/O during his deck round","Güverte turundaki 2. Kaptan"),T("AB-2 on fire patrol","Yangın devriyesindeki AB-2")],
+ isolate:T("Under the C/O, AB-1 and AB-2 close and seal ventilators, vent flaps and access hatches of the hold; C/E stops the hold fans and isolates hold lighting at the switchboard. Hatch covers kept CLOSED, the hold is not opened.","2. Kaptanın yönetiminde AB-1 ve AB-2 ambarın vantilatörlerini, havalandırma klapelerini ve giriş kapaklarını kapatıp sızdırmaz hale getirir; Başmühendis ambar fanlarını durdurur ve ambar aydınlatmasının elektriğini tablodan keser. Ambar kapakları KAPALI tutulur, ambar açılmaz."),
+ attack:T("AB-1 and AB-2 continue boundary cooling of hatch covers, coamings and adjacent bulkheads; C/O checks temperatures every 15 minutes. C/E and the Oiler prepare the fixed CO2 system: CO2 room manned, number of cylinders for this hold confirmed from the posted instructions. Release SIMULATED only.","AB-1 ve AB-2 ambar kapakları, mezarnalar ve komşu perdelerde sınır soğutmasına devam eder; 2. Kaptan sıcaklıkları 15 dakikada bir kontrol eder. Başmühendis ve Yağcı sabit CO2 sistemini hazırlar: CO2 odasına girilir, bu ambar için gereken tüp sayısı talimattan teyit edilir. Boşaltma yalnızca CANLANDIRILIR."),
  pump:T("main fire pump","ana yangın pompası"),
  equip:T("fixed CO2 system (simulated), thermometers","sabit CO2 sistemi (canlandırma), termometreler")},
 {n:T("Accommodation","Yaşam Mahalli"),
  locs:[T("Galley, deep fat fryer","Kuzine, derin yağ fritözü"),T("Laundry, tumble dryer","Çamaşırhane, kurutma makinesi"),T("Crew mess pantry","Tayfa salonu ofisi"),T("Officers' mess","Zabitan yemek salonu"),T("Ship's office","Gemi ofisi"),T("Crew cabin, A-Deck","A güvertesi tayfa kamarası"),T("Officer's cabin, C-Deck","C güvertesi zabit kamarası"),T("Ship's hospital","Gemi hastanesi"),T("Dry provision store","Kuru erzak deposu"),T("Recreation room","Dinlenme salonu"),T("Air-conditioning room","Klima dairesi"),T("Linen locker, B-Deck","B güvertesi çarşaf dolabı"),T("Gymnasium","Spor salonu"),T("Bonded store","Gümrüklü depo")],
  causes:[T("electrical short circuit","elektrik kısa devresi"),T("overheated electrical appliance","aşırı ısınan elektrikli cihaz"),T("overloaded extension socket","aşırı yüklenmiş uzatma prizi"),T("faulty light fitting","arızalı aydınlatma armatürü"),T("discarded cigarette","atılan sigara izmariti")],
- finders:[T("The Cook","Aşçı"),T("The duty OS on fire patrol","Yangın devriyesindeki vardiya gemicisi"),T("The Steward","Kamarot")],
- isolate:T("Air-conditioning and ventilation for the area stopped, fire doors and fire dampers closed; electrical supply to the space isolated at the switchboard.","Bölgenin klima ve havalandırması durdurulur, yangın kapıları ve yangın damperleri kapatılır; mahallin elektriği tablodan kesilir."),
- attack:T("Fire team checks door temperature before opening, enters low and attacks the fire with water spray and portable extinguishers; adjacent cabins and corridors are searched for persons.","Yangın ekibi açmadan önce kapı sıcaklığını kontrol eder, alçak pozisyonda girer, su spreyi ve portatif söndürücülerle yangına müdahale eder; komşu kamaralar ve koridorlar personel için aranır."),
+ finders:[T("AB-2 on fire patrol","Yangın devriyesindeki AB-2"),T("The 2/O during his round","Tur atan 2. Zabit"),T("The C/O","2. Kaptan")],
+ isolate:T("C/E stops air-conditioning and ventilation for the area and isolates its electrical supply at the switchboard; fire doors and fire dampers closed by {H}.","Başmühendis bölgenin klima ve havalandırmasını durdurur, mahallin elektriğini tablodan keser; yangın kapıları ve yangın damperleri {H} tarafından kapatılır."),
+ attack:T("AB-1 and AB-2 (SCBA) check door temperature before opening, enter low and attack the fire with water spray and portable extinguishers, then search adjacent cabins and corridors for persons.","AB-1 ve AB-2 (SCBA) açmadan önce kapı sıcaklığını kontrol eder, alçak pozisyonda girer, su spreyi ve portatif söndürücülerle yangına müdahale eder; ardından komşu kamara ve koridorları personel için arar."),
  pump:T("main fire pump","ana yangın pompası"),
  equip:T("fire blanket, CO2 and dry powder extinguishers","yangın battaniyesi, CO2 ve kuru kimyevi tozlu söndürücüler")},
 {n:T("Engine Room","Makine Dairesi"),
  locs:[T("Main engine exhaust manifold","Ana makine egzoz manifoldu"),T("No.1 Diesel generator","1 No.lu jeneratör"),T("No.2 Diesel generator","2 No.lu jeneratör"),T("No.3 Generator turbocharger","3 No.lu jeneratör turboşarjı"),T("Fuel oil purifier room","Yakıt seperatör dairesi"),T("Boiler burner front","Kazan brülör önü"),T("Incinerator room","İnsinaratör dairesi"),T("Engine room workshop","Makine atölyesi"),T("Main switchboard","Ana elektrik tablosu"),T("Steering gear room","Dümen dairesi"),T("Emergency generator room","Acil jeneratör dairesi"),T("Fuel oil transfer pump area","Yakıt transfer pompası bölgesi"),T("Lube oil purifier","Yağ seperatörü"),T("Oily water separator area","Yağlı su seperatörü bölgesi")],
  causes:[T("fuel spray from a leaking high-pressure pipe onto a hot surface","kaçak yapan yüksek basınç borusundan sıcak yüzeye yakıt püskürmesi"),T("lube oil leak onto the exhaust","egzoza yağlama yağı sızıntısı"),T("electrical short circuit","elektrik kısa devresi"),T("self-heating of oily rags","yağlı üstüpülerin kendiliğinden ısınması"),T("hot work spark","sıcak çalışma kıvılcımı")],
- finders:[T("The Oiler on watch","Vardiyadaki Yağcı"),T("The 3/E during his round","Tur atan 3. Mühendis"),T("The Fitter","Fitter (Tesviyeci)")],
- isolate:T("Engine room fans stopped, fire dampers and skylights closed; quick-closing valves of fuel and lube oil tanks operated (simulated), fuel pumps and purifiers stopped from the remote emergency stops; electrical supply to the affected equipment isolated.","Makine dairesi fanları durdurulur, yangın damperleri ve skylightlar kapatılır; yakıt ve yağ tanklarının çabuk kapanır valfleri çalıştırılır (canlandırma), yakıt pompaları ve seperatörler uzaktan acil stop ile durdurulur; ilgili ekipmanın elektriği kesilir."),
- attack:T("Fire team attacks the fire with portable foam/CO2 extinguishers and spray nozzle; second team stands by. Fixed CO2 system prepared for escalation: full evacuation and headcount required before any release. Release SIMULATED only.","Yangın ekibi portatif köpük/CO2 söndürücüler ve sprey lansla müdahale eder; ikinci ekip hazırda bekler. Büyüme ihtimaline karşı sabit CO2 sistemi hazırlanır: boşaltmadan önce tam tahliye ve sayım şarttır. Boşaltma yalnızca CANLANDIRILIR."),
+ finders:[T("The Oiler on watch","Vardiyadaki Yağcı"),T("The C/E during his round","Tur atan Başmühendis"),T("The Oiler during the evening round","Akşam turundaki Yağcı")],
+ isolate:T("C/E and the Oiler stop engine room fans, close fire dampers and skylights; quick-closing valves of fuel and lube oil tanks operated from outside (simulated), fuel pumps and purifiers stopped from the remote emergency stops; electrical supply to the affected equipment isolated.","Başmühendis ve Yağcı makine dairesi fanlarını durdurur, yangın damperlerini ve skylightları kapatır; yakıt ve yağ tanklarının çabuk kapanır valfleri dışarıdan çalıştırılır (canlandırma), yakıt pompaları ve seperatörler uzaktan acil stop ile durdurulur; ilgili ekipmanın elektriği kesilir."),
+ attack:T("Guided by the C/E, AB-1 and AB-2 (SCBA) attack the fire with portable foam/CO2 extinguishers and spray nozzle. C/E prepares the fixed CO2 system for escalation: engine room evacuated and all 8 crew counted before any release. Release SIMULATED only.","Başmühendisin yönlendirmesiyle AB-1 ve AB-2 (SCBA) portatif köpük/CO2 söndürücüler ve sprey lansla müdahale eder. Büyüme ihtimaline karşı Başmühendis sabit CO2 sistemini hazırlar: boşaltmadan önce makine dairesi tahliye edilir ve 8 kişinin tamamı sayılır. Boşaltma yalnızca CANLANDIRILIR."),
  pump:T("emergency fire pump (tested)","acil yangın pompası (test edildi)"),
  equip:T("foam applicator, fixed CO2 system (simulated), local water mist system","köpük lansı, sabit CO2 sistemi (canlandırma), lokal su sisi sistemi")},
 {n:T("Deck Areas","Güverte"),
  locs:[T("Paint store, forecastle","Baş kasara boya deposu"),T("Bosun store","Lostromo deposu"),T("Forecastle mooring winch","Baş kasara palamar vinci"),T("Deck crane No.1 hydraulic power pack","1 No.lu güverte vinci hidrolik ünitesi"),T("Deck crane No.2 operator cabin","2 No.lu güverte vinci operatör kabini"),T("Deck crane No.3 slewing motor area","3 No.lu güverte vinci dönüş motoru bölgesi"),T("Deck crane No.4 hydraulic power pack","4 No.lu güverte vinci hidrolik ünitesi"),T("Chemical store","Kimyasal deposu"),T("Aft mooring rope store","Kıç halat deposu"),T("Lifeboat deck, battery charger","Filika güvertesi, akü şarj ünitesi"),T("Garbage storage area, poop deck","Kıç kasara çöp toplama alanı"),T("Hatch cover hydraulic power pack room","Ambar kapağı hidrolik ünite dairesi"),T("Gas cylinder store (O2 / acetylene)","Gaz tüpü deposu (oksijen / asetilen)"),T("Bunker station manifold","Yakıt alma (bunker) manifoldu")],
  causes:[T("hot work spark","sıcak çalışma kıvılcımı"),T("electrical short circuit","elektrik kısa devresi"),T("hydraulic oil leak onto a hot surface","sıcak yüzeye hidrolik yağ sızıntısı"),T("self-heating of oily rags","yağlı üstüpülerin kendiliğinden ısınması"),T("discarded cigarette","atılan sigara izmariti")],
- finders:[T("The Bosun","Lostromo"),T("The duty AB on deck round","Güverte turundaki vardiya usta gemicisi"),T("The Deck Cadet","Güverte stajyeri")],
- isolate:T("Electrical and hydraulic supply to the area isolated; accommodation doors and openings on the weather side closed; course altered to put the fire downwind.","Bölgenin elektrik ve hidrolik beslemesi kesilir; yaşam mahallinin rüzgâr tarafındaki kapı ve açıklıkları kapatılır; yangın rüzgâr altında kalacak şekilde rota değiştirilir."),
- attack:T("Fire attacked from windward with jet/spray hoses; foam applicator used for oil or paint fire; gas cylinders nearby cooled and removed if safe.","Yangına rüzgâr üstünden jet/sprey hortumlarla müdahale edilir; yağ veya boya yangınında köpük lansı kullanılır; yakındaki gaz tüpleri soğutulur ve güvenliyse uzaklaştırılır."),
+ finders:[T("AB-1 on deck round","Güverte turundaki AB-1"),T("AB-2 on deck round","Güverte turundaki AB-2"),T("The C/O","2. Kaptan")],
+ isolate:T("C/E isolates electrical and hydraulic supply to the area; weather-side accommodation doors and openings closed by {H}; Master alters course to put the fire downwind.","Başmühendis bölgenin elektrik ve hidrolik beslemesini keser; yaşam mahallinin rüzgâr tarafındaki kapı ve açıklıklar {H} tarafından kapatılır; Kaptan yangın rüzgâr altında kalacak şekilde rota değiştirir."),
+ attack:T("AB-1 and AB-2 attack the fire from windward with jet/spray hoses; the Oiler brings the foam applicator for an oil or paint fire; nearby gas cylinders cooled and removed if safe.","AB-1 ve AB-2 yangına rüzgâr üstünden jet/sprey hortumlarla müdahale eder; yağ veya boya yangını için Yağcı köpük lansını getirir; yakındaki gaz tüpleri soğutulur ve güvenliyse uzaklaştırılır."),
  pump:T("main fire pump","ana yangın pompası"),
  equip:T("foam applicator and portable foam unit","köpük lansı ve portatif köpük ünitesi")}
 ];
@@ -194,25 +210,37 @@ const FIRE_AREAS=[
 function buildFire(c){
   const a=c.area, A=FIRE_AREAS[a], r=Math.floor((c.week-1)/4);
   const loc=pick(A.locs,r), cause=pick(A.causes,c.week-1), finder=pick(A.finders,r), cas=(c.week-1)%3;
+  const H = cas===1 ? T("the Oiler","Yağcı") : T("the Cook","Aşçı");
   const casStep=[
-    S(1,"No casualties. Search team confirms the area clear of persons.","Yaralı yok. Arama ekibi bölgede kimsenin kalmadığını teyit eder."),
-    S(2,"One crew member (OS) missing at headcount. Search team with SCBA finds him in the smoke-filled area, evacuates him by stretcher; oxygen and first aid given in the hospital.","Sayımda bir personel (gemici) eksik. SCBA'lı arama ekibi onu dumanlı bölgede bulur, sedye ile tahliye eder; hastanede oksijen ve ilk yardım uygulanır."),
-    S(2,"One fire team member receives a minor burn on the hand: cooled with water for 20 minutes, sterile dressing applied, entry made in the medical log.","Yangın ekibinden bir kişi elinden hafif yanar: 20 dakika su ile soğutulur, steril pansuman yapılır, tıbbi kayda işlenir.")][cas];
+    S(1,"No casualties. AB-1 and AB-2 confirm the area clear of persons; C/O reports all 8 crew accounted for.","Yaralı yok. AB-1 ve AB-2 bölgede kimsenin kalmadığını teyit eder; 2. Kaptan 8 kişinin tamamının sayıldığını bildirir."),
+    S(2,"The Cook is missing at headcount. AB-1 and AB-2 (SCBA) search the area, find him in the smoke-affected section and bring him out by stretcher; 2/O gives oxygen and first aid in the hospital.","Sayımda Aşçı eksik. AB-1 ve AB-2 (SCBA) bölgeyi arar, onu dumanlı bölümde bulur ve sedye ile dışarı çıkarır; 2. Zabit hastanede oksijen ve ilk yardım uygular."),
+    S(2,"AB-2 receives a minor burn on the hand and is withdrawn by the C/O. The Cook cools the burn with water for 20 minutes and applies a sterile dressing; 2/O makes an entry in the medical log.","AB-2 elinden hafif yanar ve 2. Kaptan tarafından geri çekilir. Aşçı yanığı 20 dakika su ile soğutur ve steril pansuman yapar; 2. Zabit tıbbi kayda işler.")][cas];
+  const iso=sub(A.isolate,{H}), cookName=cas===1?"Oiler":"Cook";
   return {
     sub:T(`Week ${c.week} · Area ${a+1}: ${A.n.en}`,`Hafta ${c.week} · Bölge ${a+1}: ${A.n.tr}`),
     scen:T(`Fire at ${loc.en}, caused by ${cause.en}.`,`${loc.tr} bölgesinde ${cause.tr} nedeniyle yangın.`),
     steps:[
       S(1,`${finder.en} discovers smoke and flames at ${loc.en}, raises the alarm at the nearest manual call point and reports to the bridge.`,`${finder.tr}, ${loc.tr} bölgesinde duman ve alev tespit eder, en yakın yangın ihbar butonuna basar ve köprüüstüne bildirir.`),
       S(1,`OOW sounds the fire alarm (continuous ringing) and announces on PA: "Fire, fire, fire at ${loc.en}. This is a drill." Master and C/E informed, time and position recorded.`,`Vardiya zabiti yangın alarmını çalar (sürekli zil) ve anons eder: "Yangın, yangın, yangın — ${loc.tr}. Bu bir talimdir." Kaptan ve Başmühendis bilgilendirilir, saat ve mevki kaydedilir.`),
-      S(2,"Master takes command on the bridge; course and speed adjusted to reduce wind effect on the fire. All crew muster at their stations as per muster list with lifejackets and helmets; headcount reported to the Master.","Kaptan köprüüstünde komutayı alır; rüzgârın yangına etkisini azaltmak için rota ve hız ayarlanır. Tüm personel görev çizelgesine göre can yeleği ve baretleriyle istasyonlarında toplanır; sayım Kaptana bildirilir."),
-      S(2,"C/O takes charge on scene. Two firemen don firefighter's outfits and SCBA: cylinder pressure checked (min. 270 bar), face seal and low-pressure whistle tested, lifelines attached, entry time written on the BA control board, radio check done.","2. Kaptan olay yerinde sorumluluğu alır. İki itfaiyeci itfaiyeci donanımı ve SCBA giyer: tüp basıncı kontrol edilir (min. 270 bar), maske sızdırmazlığı ve düşük basınç düdüğü test edilir, can halatları bağlanır, giriş saati SCBA kontrol panosuna yazılır, telsiz kontrolü yapılır."),
-      S(1,A.isolate.en,A.isolate.tr),
-      S(1,`${cap(A.pump.en)} started, fire main pressurised, hoses run out with jet/spray nozzles; boundary cooling of adjacent bulkheads and decks started.`,`${cap(A.pump.tr)} çalıştırılır, yangın hattı basınçlandırılır, jet/sprey lanslı hortumlar serilir; komşu perde ve güvertelerde sınır soğutması başlatılır.`),
+      S(2,"Master takes command on the bridge; course and speed adjusted to reduce wind effect on the fire. All 8 crew muster at their stations as per muster list with lifejackets and helmets; C/O reports the headcount to the Master.","Kaptan köprüüstünde komutayı alır; rüzgârın yangına etkisini azaltmak için rota ve hız ayarlanır. 8 personelin tamamı görev çizelgesine göre can yeleği ve baretleriyle istasyonlarında toplanır; 2. Kaptan sayımı Kaptana bildirir."),
+      S(2,"C/O takes charge on scene as fire team leader. AB-1 and AB-2 don firefighter's outfits and SCBA: cylinder pressure checked (min. 270 bar), face seal and low-pressure whistle tested, lifelines attached, radio check done. 2/O keeps the BA control board (entry time, pressure) and the radio link with the bridge.","2. Kaptan olay yerinde yangın ekibi lideri olarak sorumluluğu alır. AB-1 ve AB-2 itfaiyeci donanımı ve SCBA giyer: tüp basıncı kontrol edilir (min. 270 bar), maske sızdırmazlığı ve düşük basınç düdüğü test edilir, can halatları bağlanır, telsiz kontrolü yapılır. 2. Zabit SCBA kontrol panosunu (giriş saati, basınç) ve köprüüstü ile telsiz bağlantısını tutar."),
+      S(1,iso.en,iso.tr),
+      S(1,`${cap(A.pump.en)} started by the Oiler, fire main pressurised; hoses run out with jet/spray nozzles; ${H.en} runs a second hose for boundary cooling of adjacent bulkheads and decks.`,`${cap(A.pump.tr)} Yağcı tarafından çalıştırılır, yangın hattı basınçlandırılır; jet/sprey lanslı hortumlar serilir; komşu perde ve güvertelerin sınır soğutması için ikinci hortumu ${H.tr} serer.`),
       S(2,A.attack.en,A.attack.tr),
       casStep,
-      S(1,"Fire reported extinguished. Re-ignition watch posted; space ventilated and atmosphere tested (O2, CO, LEL) before re-entry; damage assessed.","Yangının söndüğü bildirilir. Yeniden alevlenmeye karşı nöbetçi bırakılır; mahal havalandırılır, tekrar girişten önce atmosfer ölçülür (O2, CO, LEL); hasar tespiti yapılır."),
-      S(1,"Master orders stand down. Hoses drained and stowed, SCBA cylinders recharged, extinguishers used refilled. Debrief at muster station, lessons learned discussed.","Kaptan talimi bitirir. Hortumlar boşaltılıp yerine konur, SCBA tüpleri doldurulur, kullanılan söndürücüler yenilenir. Toplanma yerinde değerlendirme yapılır, alınan dersler konuşulur.")
+      S(1,"Fire reported extinguished. AB-1 posted as re-ignition watch; C/O has the space ventilated and the atmosphere tested (O2, CO, LEL) before re-entry; damage assessed.","Yangının söndüğü bildirilir. AB-1 yeniden alevlenmeye karşı nöbetçi bırakılır; 2. Kaptan tekrar girişten önce mahali havalandırır ve atmosferi ölçtürür (O2, CO, LEL); hasar tespiti yapılır."),
+      S(1,"Master orders stand down. Hoses drained and stowed, SCBA cylinders recharged, extinguishers used refilled. Debrief at muster station with all 8 crew, lessons learned discussed.","Kaptan talimi bitirir. Hortumlar boşaltılıp yerine konur, SCBA tüpleri doldurulur, kullanılan söndürücüler yenilenir. 8 personelle toplanma yerinde değerlendirme yapılır, alınan dersler konuşulur.")
     ],
+    duties:DU({
+      MS:["In command on the bridge: navigation, communications, alarms and log entries","Köprüüstünde komuta: seyir, haberleşme, alarmlar ve kayıtlar"],
+      CO:["On-scene commander and fire team leader; headcount","Olay yeri komutanı ve yangın ekibi lideri; sayım"],
+      O2:cas===1?["BA control board, radio link with bridge; first aid to the casualty","SCBA kontrol panosu, köprüüstü ile telsiz bağlantısı; kazazedeye ilk yardım"]:["BA control board, radio link with bridge","SCBA kontrol panosu, köprüüstü ile telsiz bağlantısı"],
+      CE:["Ventilation stop, electrical isolation, fire pumps, fixed CO2 readiness","Havalandırma durdurma, elektrik izolasyonu, yangın pompaları, sabit CO2 hazırlığı"],
+      OL:cas===1?["Starts fire pump, assists C/E; closes doors and runs boundary cooling hose","Yangın pompasını çalıştırır, Başmühendise yardım eder; kapıları kapatır, sınır soğutma hortumunu serer"]:["Starts fire pump, assists C/E, hose handling","Yangın pompasını çalıştırır, Başmühendise yardım eder, hortum hizmeti"],
+      AB1:["Fire team, SCBA wearer No.1","Yangın ekibi, 1 No.lu SCBA kullanıcısı"],
+      AB2:cas===2?["Fire team, SCBA wearer No.2; burn casualty (role play)","Yangın ekibi, 2 No.lu SCBA kullanıcısı; yanık kazazedesi (canlandırma)"]:["Fire team, SCBA wearer No.2","Yangın ekibi, 2 No.lu SCBA kullanıcısı"],
+      CK:cas===1?["Missing person (role play)","Kayıp personel (canlandırma)"]:["Closes doors, boundary cooling hose, first aid and stretcher","Kapıları kapatır, sınır soğutma hortumu, ilk yardım ve sedye"]
+    }),
     equip:T(`2 firefighter's outfits, 2 SCBA with spare cylinders, fire hoses and nozzles, portable extinguishers, fire axe, lifelines, BA control board, UHF radios, stretcher, first aid kit, ${A.equip.en}.`,`2 itfaiyeci donanımı, 2 SCBA ve yedek tüpler, yangın hortumları ve lansları, portatif söndürücüler, yangın baltası, can halatları, SCBA kontrol panosu, UHF telsizler, sedye, ilk yardım çantası, ${A.equip.tr}.`)
   };
 }
@@ -229,40 +257,53 @@ const AB_REASON=[
  T("toxic smoke from a cargo hold fire covering the accommodation","ambar yangınından çıkan zehirli dumanın yaşam mahallini sarması"),
  T("engine room flooding through sea chest failure, loss of all power","deniz sandığı arızası ile makine dairesine su dolması, tüm elektriğin kesilmesi")];
 const AB_VAR=[
- S(2,"Abandonment via PORT lifeboat; embarkation practised: seating order, seat belts fastened, hatches closed.","İSKELE filika ile terk; biniş tatbik edilir: oturma sırası, emniyet kemerleri takılır, kapaklar kapatılır."),
- S(2,"Abandonment via STARBOARD lifeboat; embarkation practised: seating order, seat belts fastened, hatches closed.","SANCAK filika ile terk; biniş tatbik edilir: oturma sırası, emniyet kemerleri takılır, kapaklar kapatılır."),
- S(2,"Vessel listed 15° to port, port lifeboat assumed unusable. Port crew redirected to starboard lifeboat and liferafts as per muster list.","Gemi iskeleye 15° meyilli, iskele filika kullanılamaz kabul edilir. İskele ekibi görev çizelgesine göre sancak filika ve can sallarına yönlendirilir."),
- S(2,"Night conditions simulated: deck and embarkation lighting, torches and lifejacket lights checked; communication by handheld VHF only.","Gece şartları canlandırılır: güverte ve biniş aydınlatması, el fenerleri ve can yeleği ışıkları kontrol edilir; haberleşme yalnızca el VHF'i ile."),
- S(2,"Main power lost: emergency generator supplies emergency lighting; lifeboat lowering by gravity with manual brake control demonstrated.","Ana elektrik kesilir: acil jeneratör acil aydınlatmayı besler; filikanın yerçekimi ile manuel fren kontrollü indirilmesi gösterilir."),
- S(2,"One crew member (Oiler) missing at muster. Search party of two sent with UHF radio; found in the ER workshop and escorted to the muster station.","Toplanmada bir personel (yağcı) eksik. UHF telsizli iki kişilik arama ekibi gönderilir; makine atölyesinde bulunup toplanma yerine getirilir."),
- S(2,"Injured crew member (leg injury) carried on stretcher to the embarkation station and secured in the lifeboat.","Bacağından yaralı bir personel sedye ile biniş istasyonuna taşınır ve filikaya emniyetle yerleştirilir.")];
+ {early:false,s:S(2,"Abandonment via PORT lifeboat; all 8 crew practise embarkation: seating order, seat belts fastened, hatches closed.","İSKELE filika ile terk; 8 personelin tamamı binişi tatbik eder: oturma sırası, emniyet kemerleri takılır, kapaklar kapatılır.")},
+ {early:false,s:S(2,"Abandonment via STARBOARD lifeboat; all 8 crew practise embarkation: seating order, seat belts fastened, hatches closed.","SANCAK filika ile terk; 8 personelin tamamı binişi tatbik eder: oturma sırası, emniyet kemerleri takılır, kapaklar kapatılır.")},
+ {early:false,s:S(2,"Vessel listed 15° to port, port lifeboat assumed unusable. All 8 crew redirected to the starboard lifeboat and liferaft as per muster list.","Gemi iskeleye 15° meyilli, iskele filika kullanılamaz kabul edilir. 8 personelin tamamı görev çizelgesine göre sancak filika ve can salına yönlendirilir.")},
+ {early:false,s:S(2,"Night conditions simulated: C/E confirms deck and embarkation lighting; torches and lifejacket lights checked; communication by handheld VHF only.","Gece şartları canlandırılır: Başmühendis güverte ve biniş aydınlatmasını teyit eder; el fenerleri ve can yeleği ışıkları kontrol edilir; haberleşme yalnızca el VHF'i ile.")},
+ {early:false,s:S(2,"Main power lost: C/E starts the emergency generator and confirms emergency lighting; C/O demonstrates lowering by gravity with manual brake control.","Ana elektrik kesilir: Başmühendis acil jeneratörü çalıştırır ve acil aydınlatmayı teyit eder; 2. Kaptan filikanın yerçekimi ile manuel fren kontrollü indirilmesini gösterir.")},
+ {early:true,s:S(2,"The Oiler is missing at headcount. C/O sends AB-1 and AB-2 with a UHF radio to search; the Oiler is found in the engine room workshop and escorted to the muster station; headcount 8/8 reported to the Master.","Sayımda Yağcı eksik. 2. Kaptan AB-1 ve AB-2'yi UHF telsizle aramaya gönderir; Yağcı makine atölyesinde bulunur ve toplanma yerine getirilir; 8/8 sayım Kaptana bildirilir.")},
+ {early:false,s:S(2,"AB-2 suffers a leg injury during preparation. AB-1 and the Oiler carry him on a stretcher to the embarkation station; the Cook gives first aid and he is secured in the lifeboat.","AB-2 hazırlık sırasında bacağından yaralanır. AB-1 ve Yağcı onu sedye ile biniş istasyonuna taşır; Aşçı ilk yardım uygular ve filikaya emniyetle yerleştirilir.")}];
 const AB_VAR_N=[T("port lifeboat","iskele filika"),T("starboard lifeboat","sancak filika"),T("15° list","15° meyil"),T("night conditions","gece şartları"),T("blackout","elektrik kesintisi"),T("missing person","kayıp personel"),T("injured person","yaralı personel")];
 
 function buildAbandon(c){
   const reason=pick(AB_REASON,c.week-1), vi=(c.week-1)%7, v=AB_VAR[vi];
   const steps=[
     S(1,`Situation: ${reason.en}. Master decides to abandon ship. General emergency alarm (7 short + 1 long blasts) sounded on alarm bells and ship's whistle; PA: "All crew to muster stations. This is a drill."`,`Durum: ${reason.tr}. Kaptan gemiyi terk kararı verir. Genel acil durum alarmı (7 kısa + 1 uzun) zil ve düdükle çalınır; anons: "Tüm personel toplanma yerlerine. Bu bir talimdir."`),
-    S(2,"All crew proceed to muster stations wearing warm clothing and lifejackets, carrying immersion suits. Muster list checked, headcount reported to the bridge.","Tüm personel sıcak giysiler ve can yelekleriyle, ısı korumalı elbiselerini alarak toplanma yerlerine gider. Görev çizelgesi kontrol edilir, sayım köprüüstüne bildirilir."),
-    S(2,"C/O checks lifejackets are correctly donned. Two crew members don immersion suits; time checked (max. 2 minutes, LSA Code).","2. Kaptan can yeleklerinin doğru giyildiğini kontrol eder. İki personel ısı korumalı elbise giyer; süre ölçülür (en fazla 2 dakika, LSA Kodu)."),
-    S(1,"Duties per muster list: 2/O brings portable VHF radios and SART, 3/O brings the EPIRB, Cook brings extra provisions and blankets. GMDSS distress alert SIMULATED, not transmitted.","Görev çizelgesine göre: 2. Zabit el VHF'leri ve SART'ı, 3. Zabit EPIRB'i, Aşçı ek erzak ve battaniyeleri getirir. GMDSS tehlike çağrısı CANLANDIRILIR, gönderilmez."),
-    S(2,"Lifeboat crew remove gripes, check drain plug, painter and equipment; lifeboat engine started and run ahead/astern; boat lowered to embarkation deck.","Filika ekibi gripleri söker, tıpa, pruva halatı ve ekipmanı kontrol eder; filika motoru çalıştırılıp ileri/geri denenir; filika biniş güvertesine indirilir."),
-    v
+    S(2,"All 8 crew proceed to the muster station wearing warm clothing and lifejackets, carrying immersion suits. C/O checks the muster list and reports the headcount to the Master.","8 personelin tamamı sıcak giysiler ve can yelekleriyle, ısı korumalı elbiselerini alarak toplanma yerine gider. 2. Kaptan görev çizelgesini kontrol eder ve sayımı Kaptana bildirir.")
   ];
+  if(v.early) steps.push(v.s);
+  steps.push(
+    S(2,"C/O checks lifejackets are correctly donned. 2/O and the Cook don immersion suits; time checked (max. 2 minutes, LSA Code).","2. Kaptan can yeleklerinin doğru giyildiğini kontrol eder. 2. Zabit ve Aşçı ısı korumalı elbise giyer; süre ölçülür (en fazla 2 dakika, LSA Kodu)."),
+    S(1,"Duties per muster list: Master sends the distress alert by GMDSS (SIMULATED, not transmitted) and takes the log book and ship's documents; 2/O brings portable VHF radios, SART and EPIRB; Cook brings extra water, provisions, blankets and the first aid kit.","Görev çizelgesine göre: Kaptan GMDSS ile tehlike çağrısı yapar (CANLANDIRMA, gönderilmez), jurnal ve gemi evraklarını alır; 2. Zabit el VHF'lerini, SART ve EPIRB'i getirir; Aşçı ek su, erzak, battaniye ve ilk yardım çantasını getirir."),
+    S(2,"C/E stops the main engine and checks the emergency generator. Under the C/O, AB-1 and AB-2 remove the gripes, check drain plug, painter and equipment; the Oiler starts the lifeboat engine and runs it ahead/astern; boat lowered to the embarkation deck.","Başmühendis ana makineyi durdurur ve acil jeneratörü kontrol eder. 2. Kaptanın yönetiminde AB-1 ve AB-2 gripleri söker, tıpa, pruva halatı ve ekipmanı kontrol eder; Yağcı filika motorunu çalıştırıp ileri/geri dener; filika biniş güvertesine indirilir.")
+  );
+  if(!v.early) steps.push(v.s);
   if(c.xm){
-    steps.push(S(4,"XM: All lifeboats launched into the water with assigned crew. Off-load release demonstrated, boat manoeuvred around the vessel approx. 15 minutes with VHF contact to bridge; boat recovered, hooks reset, falls checked. Entry made in the log book.","XM: Tüm filikalar görevli ekibiyle suya indirilir. Yüksüz kanca açma gösterilir, filika köprüüstüyle VHF temasında yaklaşık 15 dakika gemi etrafında manevra yapar; filika geri alınır, kancalar kurulur, halatlar kontrol edilir. Jurnale kayıt edilir."));
+    steps.push(S(4,"XM: Lifeboat launched into the water with the C/O in command, the Oiler on the engine and AB-1; C/E and AB-2 operate the davit winch. Off-load release demonstrated, boat manoeuvred around the vessel approx. 15 minutes with VHF contact to the Master on the bridge; boat recovered, hooks reset, falls checked. Entry made in the log book.","XM: Filika 2. Kaptan komutasında, motorda Yağcı ve AB-1 ile suya indirilir; Başmühendis ve AB-2 davit vincini kullanır. Yüksüz kanca açma gösterilir, filika köprüüstündeki Kaptanla VHF temasında yaklaşık 15 dakika gemi etrafında manevra yapar; filika geri alınır, kancalar kurulur, halatlar kontrol edilir. Jurnale kayıt edilir."));
   } else {
-    steps.push(S(1,"Emergency lighting at muster and embarkation stations checked; liferafts, HRUs and launching appliances inspected.","Toplanma ve biniş yerlerindeki acil aydınlatma kontrol edilir; can salları, hidrostatik serbest bırakma üniteleri ve indirme düzenekleri incelenir."));
+    steps.push(S(1,"C/E checks emergency lighting at muster and embarkation stations; AB-1 and AB-2 inspect liferafts, HRUs and launching appliances.","Başmühendis toplanma ve biniş yerlerindeki acil aydınlatmayı kontrol eder; AB-1 ve AB-2 can salları, hidrostatik serbest bırakma üniteleri ve indirme düzeneklerini inceler."));
   }
-  steps.push(S(1,"Stand down: boats hoisted and secured, gripes reset, equipment checked, immersion suits stowed. Debrief held.","Talim sonu: filikalar yerine alınıp emniyete alınır, gripler takılır, ekipman kontrol edilir, ısı korumalı elbiseler yerine konur. Değerlendirme yapılır."));
+  steps.push(S(1,"Master orders stand down: boat hoisted and secured, gripes reset, equipment checked, immersion suits stowed. Debrief held with all 8 crew.","Kaptan talimi bitirir: filika yerine alınıp emniyete alınır, gripler takılır, ekipman kontrol edilir, ısı korumalı elbiseler yerine konur. 8 personelle değerlendirme yapılır."));
   return {
-    sub:T(`Week ${c.week} · Variation: ${AB_VAR_N[vi].en}${c.xm?" · XM (boats in water)":""}`,`Hafta ${c.week} · Durum: ${AB_VAR_N[vi].tr}${c.xm?" · XM (filikalar suya)":""}`),
+    sub:T(`Week ${c.week} · Variation: ${AB_VAR_N[vi].en}${c.xm?" · XM (boat in water)":""}`,`Hafta ${c.week} · Durum: ${AB_VAR_N[vi].tr}${c.xm?" · XM (filika suya)":""}`),
     scen:T(`Abandon ship due to ${reason.en}.`,`${cap(reason.tr)} nedeniyle gemiyi terk.`),
     steps,
-    equip:T("Lifeboats, liferafts, lifejackets, immersion suits, portable VHF radios, SART, EPIRB, emergency lighting, stretcher, UHF radios.","Filikalar, can salları, can yelekleri, ısı korumalı elbiseler, el VHF'leri, SART, EPIRB, acil aydınlatma, sedye, UHF telsizler.")
+    duties:DU({
+      MS:["Overall command, distress alert (simulated), log book and ship's documents; last to leave","Genel komuta, tehlike çağrısı (canlandırma), jurnal ve gemi evrakları; gemiyi en son terk eder"],
+      CO:[c.xm?"Muster and headcount, launching; boat commander in the water":"Muster and headcount, in charge of survival craft launching",c.xm?"Toplanma ve sayım, indirme; suda filika komutanı":"Toplanma ve sayım, can kurtarma aracı indirme sorumlusu"],
+      O2:["Portable VHFs, SART and EPIRB; immersion suit demonstration","El VHF'leri, SART ve EPIRB; ısı korumalı elbise gösterimi"],
+      CE:[c.xm?"Stops M/E, emergency generator and lighting; davit winch":"Stops M/E, emergency generator and lighting",c.xm?"Ana makineyi durdurur, acil jeneratör ve aydınlatma; davit vinci":"Ana makineyi durdurur, acil jeneratör ve aydınlatma"],
+      OL:vi===5?["Lifeboat engine; missing person (role play)","Filika motoru; kayıp personel (canlandırma)"]:["Lifeboat engine","Filika motoru"],
+      AB1:["Gripes, painter and launching; liferaft","Gripler, pruva halatı ve indirme; can salı"],
+      AB2:vi===6?["Gripes and launching; injured person (role play)","Gripler ve indirme; yaralı personel (canlandırma)"]:["Gripes and launching; liferaft","Gripler ve indirme; can salı"],
+      CK:["Extra water, provisions, blankets and first aid kit; immersion suit demonstration","Ek su, erzak, battaniye ve ilk yardım çantası; ısı korumalı elbise gösterimi"]
+    }),
+    equip:T("Lifeboat, liferafts, lifejackets, immersion suits, portable VHF radios, SART, EPIRB, emergency lighting, stretcher, UHF radios.","Filika, can salları, can yelekleri, ısı korumalı elbiseler, el VHF'leri, SART, EPIRB, acil aydınlatma, sedye, UHF telsizler.")
   };
 }
 
-/* ---------------- SINGLE-STEP-SET DRILLS ---------------- */
+/* ---------------- STEERING ---------------- */
 const STEERING_SC=[
  T("steering gear control system failure in open sea","açık denizde dümen kontrol sistemi arızası"),
  T("No.1 hydraulic pump failure during coastal passage","kıyı seyrinde 1 No.lu hidrolik pompa arızası"),
@@ -273,125 +314,201 @@ const STEERING_SC=[
 function buildSteering(c){const s=pick(STEERING_SC,c.k);return{
  scen:T(`Loss of steering: ${s.en}.`,`Dümen arızası: ${s.tr}.`),
  steps:[
-  S(1,`OOW observes rudder not responding (${s.en}); steering failure alarm acknowledged.`,`Vardiya zabiti dümenin cevap vermediğini görür (${s.tr}); dümen arıza alarmı kabul edilir.`),
-  S(1,"Master and C/E informed; main engine on stand-by, speed reduced; position, traffic and depth checked.","Kaptan ve Başmühendis bilgilendirilir; ana makine stand-by, hız düşürülür; mevki, trafik ve derinlik kontrol edilir."),
-  S(1,"NUC signals displayed (2 all-round red lights / 2 black balls); Sécurité warning on VHF Ch.16 simulated.","Kumanda altında olmayan gemi işaretleri verilir (2 kırmızı fener / 2 siyah top); VHF Kanal 16'da Sécurité uyarısı canlandırılır."),
-  S(1,"Emergency steering team (2/O, AB, 2/E) proceeds to steering gear room; communication with bridge established by sound-powered telephone and VHF; gyro repeater and rudder angle indicator checked.","Acil dümen ekibi (2. Zabit, usta gemici, 2. Mühendis) dümen dairesine gider; köprüüstü ile ses gücüyle çalışan telefon ve VHF bağlantısı kurulur; cayro tekrarlayıcı ve dümen açı göstergesi kontrol edilir."),
-  S(2,"Changeover to local/emergency steering as per posted instructions. Helm orders from bridge executed (port 10, midships, starboard 20, hard over) and rudder response confirmed.","Dairede asılı talimata göre lokal/acil dümene geçilir. Köprüüstünden verilen dümen emirleri uygulanır (iskele 10, alavara, sancak 20, alabanda) ve dümen cevabı teyit edilir."),
-  S(2,"Both steering pumps and the alternative power supply tested; heading kept for 10 minutes with emergency steering.","Her iki dümen pompası ve alternatif güç kaynağı test edilir; acil dümenle 10 dakika rota tutulur."),
-  S(1,"Control returned to bridge; follow-up, non-follow-up and autopilot tested; NUC signals lowered, Sécurité cancelled.","Kontrol köprüüstüne alınır; follow-up, non-follow-up ve otopilot test edilir; NUC işaretleri indirilir, Sécurité iptal edilir."),
-  S(1,"Stand down and debrief. Drill recorded in the log book (SOLAS V/26, every 3 months).","Talim sonu ve değerlendirme. Talim jurnale işlenir (SOLAS V/26, 3 ayda bir).")],
+  S(1,`OOW observes the rudder not responding (${s.en}); steering failure alarm acknowledged.`,`Vardiya zabiti dümenin cevap vermediğini görür (${s.tr}); dümen arıza alarmı kabul edilir.`),
+  S(1,"Master called to the bridge and takes the con; C/E informed; main engine on stand-by, speed reduced; position, traffic and depth checked. C/O goes to the forecastle to stand by the anchors.","Kaptan köprüüstüne çağrılır ve idareyi alır; Başmühendis bilgilendirilir; ana makine stand-by, hız düşürülür; mevki, trafik ve derinlik kontrol edilir. 2. Kaptan demirlere hazır olmak üzere baş kasaraya gider."),
+  S(1,"AB-2 displays NUC signals (2 all-round red lights / 2 black balls); 2/O sends a Sécurité warning on VHF Ch.16 (simulated).","AB-2 kumanda altında olmayan gemi işaretlerini verir (2 kırmızı fener / 2 siyah top); 2. Zabit VHF Kanal 16'da Sécurité uyarısı yapar (canlandırma)."),
+  S(1,"Emergency steering team (C/E and AB-1) proceeds to the steering gear room; communication with the bridge established by sound-powered telephone and VHF; gyro repeater and rudder angle indicator checked.","Acil dümen ekibi (Başmühendis ve AB-1) dümen dairesine gider; köprüüstü ile ses gücüyle çalışan telefon ve VHF bağlantısı kurulur; cayro tekrarlayıcı ve dümen açı göstergesi kontrol edilir."),
+  S(2,"C/E changes over to local/emergency steering as per the posted instructions. AB-1 executes helm orders from the Master (port 10, midships, starboard 20, hard over) and the rudder response is confirmed.","Başmühendis dairede asılı talimata göre lokal/acil dümene geçer. AB-1 Kaptanın dümen emirlerini uygular (iskele 10, alavara, sancak 20, alabanda) ve dümen cevabı teyit edilir."),
+  S(2,"C/E tests both steering pumps and the alternative power supply while the Oiler keeps the main engine on stand-by; heading kept for 10 minutes with emergency steering.","Başmühendis her iki dümen pompasını ve alternatif güç kaynağını test eder, Yağcı ana makineyi stand-by tutar; acil dümenle 10 dakika rota tutulur."),
+  S(1,"Control returned to the bridge; 2/O tests follow-up, non-follow-up and autopilot; NUC signals lowered, Sécurité cancelled.","Kontrol köprüüstüne alınır; 2. Zabit follow-up, non-follow-up ve otopilotu test eder; NUC işaretleri indirilir, Sécurité iptal edilir."),
+  S(1,"Master orders stand down; debrief with all 8 crew. Drill recorded in the log book (SOLAS V/26, every 3 months).","Kaptan talimi bitirir; 8 personelle değerlendirme yapılır. Talim jurnale işlenir (SOLAS V/26, 3 ayda bir).")],
+ duties:DU({
+  MS:["Takes the con, gives helm orders","İdareyi alır, dümen emirlerini verir"],
+  CO:["Forecastle, anchors ready for emergency use","Baş kasara, demirler acil kullanıma hazır"],
+  O2:["VHF Sécurité, communication with steering gear room, autopilot tests","VHF Sécurité, dümen dairesi ile haberleşme, otopilot testleri"],
+  CE:["Changeover to emergency steering, pump tests","Acil dümene geçiş, pompa testleri"],
+  OL:["Engine room, main engine on stand-by","Makine dairesi, ana makine stand-by"],
+  AB1:["Helmsman in the steering gear room","Dümen dairesinde dümenci"],
+  AB2:["NUC signals, lookout","NUC işaretleri, gözcü"],
+  CK:["Muster station, messenger and first aid stand-by","Toplanma yeri, haberci ve ilk yardım hazırlığı"]}),
  equip:T("Steering gear, emergency steering instructions, sound-powered telephone, VHF/UHF radios, gyro repeater, NUC signals.","Dümen makinesi, acil dümen talimatı, ses gücüyle çalışan telefon, VHF/UHF telsizler, cayro tekrarlayıcı, NUC işaretleri.")}}
 
+/* ---------------- MAN OVERBOARD ---------------- */
 const MOB_SC=[
- {s:T("An AB falls overboard from the starboard main deck while checking hatch cover cleats; daylight, calm sea.","Bir usta gemici ambar kapağı kilitlerini kontrol ederken sancak ana güverteden denize düşer; gündüz, sakin deniz."),side:"s",turn:"W",rec:"boat"},
- {s:T("Night watch: the lookout sees a crew member fall from the port poop deck.","Gece vardiyası: gözcü bir personelin iskele kıç kasaradan düştüğünü görür."),side:"p",turn:"A",rec:"boat"},
- {s:T("A Cadet is reported missing at 08:00, last seen on deck at 02:30.","Bir stajyer saat 08:00'de kayıp bildirilir, en son 02:30'da güvertede görülmüştür."),side:"-",turn:"S",rec:"boat"},
- {s:T("A crew member falls from the starboard pilot ladder during pilot embarkation.","Pilot alınırken bir personel sancak pilot çarmıhından denize düşer."),side:"s",turn:"W",rec:"boat"},
- {s:T("Heavy weather: the Bosun is washed overboard at the port forecastle; launching the rescue boat is unsafe.","Ağır hava: Lostromo iskele baş kasaradan dalga ile denize düşer; kurtarma botu indirmek emniyetsizdir."),side:"p",turn:"W",rec:"ship"},
- {s:T("At anchor: an Oiler falls unconscious into the water near the starboard accommodation ladder.","Demirdeyken: bir yağcı sancak iskele merdiveni yakınında baygın halde denize düşer."),side:"s",turn:"N",rec:"boat"}];
+ {s:T("AB-1 falls overboard from the starboard main deck while checking hatch cover cleats; daylight, calm sea.","AB-1 ambar kapağı kilitlerini kontrol ederken sancak ana güverteden denize düşer; gündüz, sakin deniz."),cas:"AB1",wit:T("AB-2, working nearby,","Yakında çalışan AB-2"),witK:"AB2",side:"s",turn:"W",rec:"boat"},
+ {s:T("Night watch: lookout AB-2 sees the Oiler fall from the port poop deck.","Gece vardiyası: gözcü AB-2, Yağcının iskele kıç kasaradan düştüğünü görür."),cas:"OL",wit:T("AB-2 (lookout)","Gözcü AB-2"),witK:"AB2",side:"p",turn:"A",rec:"boat"},
+ {s:T("The Cook is reported missing at 07:00, last seen on deck at 02:30.","Aşçı saat 07:00'de kayıp bildirilir, en son 02:30'da güvertede görülmüştür."),cas:"CK",side:"-",turn:"S",rec:"boat"},
+ {s:T("AB-2 falls from the starboard pilot ladder during pilot embarkation.","Pilot alınırken AB-2 sancak pilot çarmıhından denize düşer."),cas:"AB2",wit:T("The C/O at the pilot ladder","Pilot çarmıhındaki 2. Kaptan"),witK:"CO",side:"s",turn:"W",rec:"boat"},
+ {s:T("Heavy weather: AB-1 is washed overboard at the port forecastle; launching the rescue boat is unsafe.","Ağır hava: AB-1 iskele baş kasaradan dalga ile denize düşer; kurtarma botu indirmek emniyetsizdir."),cas:"AB1",wit:T("The C/O on the forecastle","Baş kasaradaki 2. Kaptan"),witK:"CO",side:"p",turn:"W",rec:"ship"},
+ {s:T("At anchor: the Oiler falls unconscious into the water near the starboard accommodation ladder.","Demirdeyken: Yağcı sancak iskele merdiveni yakınında baygın halde denize düşer."),cas:"OL",wit:T("AB-2 on anchor watch","Demir vardiyasındaki AB-2"),witK:"AB2",side:"s",turn:"N",rec:"boat"}];
 const TURNS={
  W:T("Williamson turn: rudder hard over to the side of the person; after 60° change, rudder hard over to the opposite side; steady on reciprocal course and approach the person.","Williamson dönüşü: dümen kazazedenin olduğu tarafa alabanda; 60° değişimden sonra ters tarafa alabanda; ters rotada sabitlenip kazazedeye yaklaşılır."),
  A:T("Anderson turn: rudder hard over to the side of the person, turn about 250° and approach with engine stopped when the person is about 20° ahead.","Anderson dönüşü: dümen kazazede tarafına alabanda, yaklaşık 250° dönülür, kazazede pruvanın 20° açığına gelince makine stop ile yaklaşılır."),
  S:T("Scharnow turn: rudder hard over, after 240° change rudder hard over to the opposite side; steady on reciprocal course to search back along the track. Search plan made with IAMSAR.","Scharnow dönüşü: dümen alabanda, 240° değişimden sonra ters tarafa alabanda; geçilen rotada geri aramak için ters rotada sabitlenir. IAMSAR'a göre arama planı yapılır."),
  N:T("Vessel at anchor: no manoeuvre; rescue boat prepared and launched immediately, anchor watch kept.","Gemi demirde: manevra yok; kurtarma botu derhal hazırlanıp indirilir, demir vardiyası sürdürülür.")};
+const TURN_N={W:T("Williamson turn","Williamson dönüşü"),A:T("Anderson turn","Anderson dönüşü"),S:T("Scharnow turn","Scharnow dönüşü"),N:T("at anchor, no manoeuvre","demirde, manevra yok")};
+const joinNames=(ks,lang)=>ks.map(k=>CREW[k][lang]).join(lang==="en"?", ":", ").replace(/, ([^,]*)$/,lang==="en"?" and $1":" ve $1");
 function buildMob(c){const m=pick(MOB_SC,c.k);
  const sideEn=m.side==="s"?"starboard":m.side==="p"?"port":"", sideTr=m.side==="s"?"sancak":m.side==="p"?"iskele":"";
+ const avail=["AB1","AB2","OL"].filter(k=>k!==m.cas);
+ const team=["CO",avail[0],avail[1]], helper=avail[2]||null;
+ const aid=m.cas==="CK"?"O2":"CK";
  const first = m.turn==="S"
-  ? S(1,"Person missing: last known position and time plotted from ECDIS/VDR; Master informed, ship-wide search started.","Kayıp personel: son görüldüğü mevki ve saat ECDIS/VDR'den işaretlenir; Kaptan bilgilendirilir, gemi içi arama başlatılır.")
-  : S(1,`Witness shouts "Man overboard ${sideEn} side!", throws the nearest lifebuoy (with light and smoke signal) and keeps pointing at the person.`,`Gören kişi "${cap(sideTr)} taraftan denize adam düştü!" diye bağırır, en yakın can simidini (ışık ve duman işaretli) atar ve kazazedeyi göstermeye devam eder.`);
+  ? S(1,"Cook reported missing: C/O, AB-1 and AB-2 search the ship; 2/O plots the last known position and time from ECDIS/VDR; Master informed.","Aşçı kayıp bildirilir: 2. Kaptan, AB-1 ve AB-2 gemiyi arar; 2. Zabit son görüldüğü mevki ve saati ECDIS/VDR'den işaretler; Kaptan bilgilendirilir.")
+  : S(1,`${m.wit.en} shouts "Man overboard ${sideEn} side!", throws the nearest lifebuoy (with light and smoke signal) and keeps pointing at the casualty. A dummy is used in the water.`,`${m.wit.tr} "${cap(sideTr)} taraftan denize adam düştü!" diye bağırır, en yakın can simidini (ışık ve duman işaretli) atar ve kazazedeyi göstermeye devam eder. Suda manken kullanılır.`);
+ const davitEn=helper?`the C/E and ${CREW[helper].en}`:"the C/E", davitTr=helper?`Başmühendis ve ${CREW[helper].tr}`:"Başmühendis";
  const rec = m.rec==="ship"
-  ? S(3,"Recovery from the ship's lee side: scrambling net and rescue sling rigged, crew in lifejackets with safety harness; casualty (dummy) recovered on board.","Geminin rüzgâraltı bordasından kurtarma: tırmanma ağı ve kurtarma askısı hazırlanır, ekip can yeleği ve emniyet kemeriyle çalışır; kazazede (manken) gemiye alınır.")
-  : S(3,"Rescue boat crew muster in lifejackets/immersion suits; boat prepared, lowered and recovers the casualty (dummy); boat and crew back on board.","Kurtarma botu ekibi can yeleği/ısı korumalı elbiselerle toplanır; bot hazırlanır, indirilir ve kazazedeyi (manken) alır; bot ve ekip gemiye döner.");
- return{
- scen:m.s,
- steps:[
+  ? S(3,`Recovery from the ship's lee side by ${joinNames(team,"en")}: scrambling net and rescue sling rigged, crew in lifejackets with safety harness; casualty (dummy) recovered on board.`,`Geminin rüzgâraltı bordasından ${joinNames(team,"tr")} tarafından kurtarma: tırmanma ağı ve kurtarma askısı hazırlanır, ekip can yeleği ve emniyet kemeriyle çalışır; kazazede (manken) gemiye alınır.`)
+  : S(3,`Rescue boat crew (${joinNames(team,"en")}, C/O in charge) muster in lifejackets/immersion suits; boat lowered by ${davitEn}; casualty (dummy) recovered and boat returns on board.`,`Kurtarma botu ekibi (${joinNames(team,"tr")}, sorumlu 2. Kaptan) can yeleği/ısı korumalı elbiselerle toplanır; bot ${davitTr} tarafından indirilir; kazazede (manken) alınır ve bot gemiye döner.`);
+ const steps=[
   first,
-  S(1,`OOW presses MOB button on ECDIS/GPS, releases bridge-wing MOB lifebuoy${sideEn?`, puts rudder hard over to ${sideEn}`:""}; engine on stand-by, Master informed.`,`Vardiya zabiti ECDIS/GPS'te MOB butonuna basar, köprü kanadındaki MOB can simidini atar${sideTr?`, dümeni ${sideTr} alabanda yapar`:""}; makine stand-by, Kaptan bilgilendirilir.`),
-  S(1,'Three prolonged blasts ("O") and general alarm; PA: "Man overboard. This is a drill." Flag "O" hoisted, lookouts posted on bridge wings.','Üç uzun düdük ("O") ve genel alarm; anons: "Denize adam düştü. Bu bir talimdir." "O" bayrağı çekilir, köprü kanatlarına gözcü konur.'),
-  S(2,TURNS[m.turn].en,TURNS[m.turn].tr),
-  S(1,"PAN-PAN / MAYDAY RELAY to nearby vessels and MRCC SIMULATED on VHF Ch.16 / DSC (not transmitted).","Yakındaki gemilere ve MRCC'ye VHF Kanal 16 / DSC üzerinden PAN-PAN / MAYDAY RELAY CANLANDIRILIR (gönderilmez)."),
+  S(1,`OOW presses the MOB button on ECDIS/GPS, releases the bridge-wing MOB lifebuoy${sideEn?`, puts the rudder hard over to ${sideEn}`:""}; Master called; C/E puts the engine on stand-by.`,`Vardiya zabiti ECDIS/GPS'te MOB butonuna basar, köprü kanadındaki MOB can simidini atar${sideTr?`, dümeni ${sideTr} alabanda yapar`:""}; Kaptan çağrılır; Başmühendis makineyi stand-by yapar.`),
+  S(1,'Three prolonged blasts ("O") and general alarm; PA: "Man overboard. This is a drill." Flag "O" hoisted; 2/O keeps lookout from the bridge wing.','Üç uzun düdük ("O") ve genel alarm; anons: "Denize adam düştü. Bu bir talimdir." "O" bayrağı çekilir; 2. Zabit köprü kanadından gözcülük yapar.'),
+  S(2,"Master: "+TURNS[m.turn].en,"Kaptan: "+TURNS[m.turn].tr),
+  S(1,"2/O SIMULATES PAN-PAN / MAYDAY RELAY to nearby vessels and MRCC on VHF Ch.16 / DSC (not transmitted).","2. Zabit yakındaki gemilere ve MRCC'ye VHF Kanal 16 / DSC üzerinden PAN-PAN / MAYDAY RELAY CANLANDIRIR (gönderilmez)."),
   rec,
-  S(2,"Casualty kept horizontal, wet clothes removed, treated for hypothermia; CPR if unresponsive; radio medical advice (TMAS) simulated.","Kazazede yatay tutulur, ıslak giysileri çıkarılır, hipotermi tedavisi uygulanır; tepki yoksa CPR; telsizle tıbbi danışma (TMAS) canlandırılır."),
-  S(1,"Stand down: rescue boat secured, used lifebuoys replaced. Debrief held.","Talim sonu: kurtarma botu emniyete alınır, kullanılan can simitleri yenilenir. Değerlendirme yapılır.")],
- equip:T("Lifebuoys with light and smoke signal, rescue boat, lifejackets, immersion suits, rescue sling, scrambling net, VHF/UHF radios, stretcher, blankets, first aid kit.","Işıklı ve duman işaretli can simitleri, kurtarma botu, can yelekleri, ısı korumalı elbiseler, kurtarma askısı, tırmanma ağı, VHF/UHF telsizler, sedye, battaniyeler, ilk yardım çantası.")}}
+  S(2,`${CREW[aid].en} treats the casualty: kept horizontal, wet clothes removed, treated for hypothermia; CPR if unresponsive; radio medical advice (TMAS) simulated by the Master.`,`${CREW[aid].tr} kazazedeye müdahale eder: yatay tutulur, ıslak giysileri çıkarılır, hipotermi tedavisi uygulanır; tepki yoksa CPR; telsizle tıbbi danışma (TMAS) Kaptan tarafından canlandırılır.`),
+  S(1,"Master orders stand down: rescue boat secured, used lifebuoys replaced. Debrief held with all 8 crew.","Kaptan talimi bitirir: kurtarma botu emniyete alınır, kullanılan can simitleri yenilenir. 8 personelle değerlendirme yapılır.")];
+ const D={};
+ CREW_ORDER.forEach(k=>{
+  const en=[],tr=[];
+  if(k===m.cas){ if(m.turn==="S"){en.push("Missing person (role play)");tr.push("Kayıp personel (canlandırma)");} else {en.push("Casualty (dummy used in the water)");tr.push("Kazazede (suda manken kullanılır)");} D[k]=[en.join("; "),tr.join("; ")]; return; }
+  if(k===m.witK){en.push("Witness: shouts, throws lifebuoy, keeps pointing");tr.push("Gören kişi: bağırır, can simidi atar, göstermeye devam eder");}
+  if(k==="MS"){en.push(`Command on the bridge, ${TURN_N[m.turn].en}, TMAS`);tr.push(`Köprüüstünde komuta, ${TURN_N[m.turn].tr}, TMAS`);}
+  if(k==="O2"){en.push("MOB position, lookout from bridge wing, PAN-PAN (simulated)");tr.push("MOB mevkii, köprü kanadından gözcülük, PAN-PAN (canlandırma)");}
+  if(k==="CE"){en.push(m.rec==="boat"?"Engine stand-by, operates rescue boat davit":"Engine stand-by");tr.push(m.rec==="boat"?"Makine stand-by, kurtarma botu davitini kullanır":"Makine stand-by");}
+  if(team.includes(k)){ if(k==="CO"){en.push(m.rec==="boat"?"In charge of rescue boat":"Recovery team leader");tr.push(m.rec==="boat"?"Kurtarma botu sorumlusu":"Kurtarma ekibi lideri");} else {en.push(m.rec==="boat"?"Rescue boat crew":"Recovery team");tr.push(m.rec==="boat"?"Kurtarma botu ekibi":"Kurtarma ekibi");} }
+  if(k===helper){en.push(m.rec==="boat"?"Assists davit operation":"Rigs scrambling net");tr.push(m.rec==="boat"?"Davit operasyonuna yardım":"Tırmanma ağını hazırlar");}
+  if(k===aid){en.push("First aid, blankets, hypothermia treatment");tr.push("İlk yardım, battaniye, hipotermi tedavisi");}
+  if(m.turn==="S"&&(k==="AB1"||k==="AB2")&&!team.includes(k)){en.push("Ship search");tr.push("Gemi içi arama");}
+  if(!en.length){en.push("Muster station, stand-by");tr.push("Toplanma yeri, hazırda bekler");}
+  D[k]=[en.join("; "),tr.join("; ")];
+ });
+ return{scen:m.s,steps,duties:DU(D),
+ equip:T("Lifebuoys with light and smoke signal, rescue boat, lifejackets, immersion suits, rescue sling, scrambling net, VHF/UHF radios, stretcher, blankets, first aid kit, MOB dummy.","Işıklı ve duman işaretli can simitleri, kurtarma botu, can yelekleri, ısı korumalı elbiseler, kurtarma askısı, tırmanma ağı, VHF/UHF telsizler, sedye, battaniyeler, ilk yardım çantası, manken.")}}
 
+/* ---------------- OIL SPILL ---------------- */
 const OIL_SC=[
  T("Fuel oil overflows from No.2 FO tank vent on deck during bunkering.","Yakıt alımı sırasında 2 No.lu yakıt tankı havalandırmasından güverteye yakıt taşar."),
  T("Hydraulic hose of deck crane No.3 bursts, oil sprays onto the main deck.","3 No.lu güverte vincinin hidrolik hortumu patlar, yağ ana güverteye fışkırır."),
  T("Leak from the starboard bunker manifold flange during bunkering.","Yakıt alımı sırasında sancak bunker manifold flanşından kaçak."),
  T("Hatch cover hydraulic pipe fails at No.4 Hold, oil reaches the scupper.","4 No.lu ambar kapağı hidrolik borusu patlar, yağ frengiye ulaşır."),
  T("Overflow on deck during internal FO transfer due to a sounding error.","Ölçüm hatası nedeniyle tanklar arası yakıt transferinde güverteye taşma."),
- T("Lube oil drum ruptures during provision/store handling on the aft deck.","Kıç güvertede kumanya/malzeme alımı sırasında yağ varili patlar.")];
+ T("Lube oil drum ruptures during store handling on the aft deck.","Kıç güvertede malzeme alımı sırasında yağ varili patlar.")];
 function buildOil(c){const s=pick(OIL_SC,c.k);return{
  scen:s,
  steps:[
   S(1,`Discovery: ${s.en}`,`Tespit: ${s.tr}`),
-  S(1,"Operation stopped immediately: pumps stopped, valves closed, source isolated; bunker station / ER informed.","Operasyon derhal durdurulur: pompalar durdurulur, valfler kapatılır, kaynak izole edilir; bunker istasyonu / makine dairesi bilgilendirilir."),
-  S(1,'Alarm and PA: "Oil spill on deck, SOPEP team to muster. This is a drill." Master and C/E informed; smoking and hot work prohibited.','Alarm ve anons: "Güvertede yağ dökülmesi, SOPEP ekibi toplansın. Bu bir talimdir." Kaptan ve Başmühendis bilgilendirilir; sigara ve sıcak çalışma yasaklanır.'),
-  S(2,"SOPEP team musters with PPE (chemical suits, gloves, goggles, boots). Scupper plugs confirmed in place; spill contained with absorbent booms.","SOPEP ekibi KKD ile toplanır (kimyasal elbise, eldiven, gözlük, çizme). Frengi tapalarının takılı olduğu teyit edilir; dökülme emici bariyerlerle çevrelenir."),
-  S(3,"Oil collected with absorbent pads, sawdust, scoops and portable pump into empty drums/tank; deck cleaned. No chemicals or oil washed overboard.","Yağ emici pedler, talaş, kürek ve portatif pompa ile boş varillere/tanka toplanır; güverte temizlenir. Denize kimyasal veya yağ atılmaz."),
-  S(1,"Hull and water surface checked: no oil overboard.","Borda ve deniz yüzeyi kontrol edilir: denize yağ geçmemiştir."),
-  S(1,"Reports SIMULATED per SOPEP: port/coastal state, DPA and P&I. Oil Record Book entry discussed.","SOPEP'e göre raporlar CANLANDIRILIR: liman/kıyı devleti, DPA ve P&I. Yağ Kayıt Defteri kaydı görüşülür."),
-  S(1,"Stand down: oily waste stored in labelled drums, SOPEP locker replenished. Debrief held.","Talim sonu: yağlı atıklar etiketli varillerde saklanır, SOPEP dolabı tamamlanır. Değerlendirme yapılır.")],
+  S(1,"Operation stopped immediately: C/E and the Oiler stop the pumps and close the valves, source isolated; Master informed.","Operasyon derhal durdurulur: Başmühendis ve Yağcı pompaları durdurur, valfleri kapatır, kaynak izole edilir; Kaptan bilgilendirilir."),
+  S(1,'Alarm and PA: "Oil spill on deck, SOPEP team to muster. This is a drill." Smoking and hot work prohibited.','Alarm ve anons: "Güvertede yağ dökülmesi, SOPEP ekibi toplansın. Bu bir talimdir." Sigara ve sıcak çalışma yasaklanır.'),
+  S(2,"SOPEP team (C/O in charge, AB-1, AB-2 and the Cook) musters with PPE (chemical suits, gloves, goggles, boots). AB-1 confirms scupper plugs in place; spill contained with absorbent booms.","SOPEP ekibi (sorumlu 2. Kaptan, AB-1, AB-2 ve Aşçı) KKD ile toplanır (kimyasal elbise, eldiven, gözlük, çizme). AB-1 frengi tapalarının takılı olduğunu teyit eder; dökülme emici bariyerlerle çevrelenir."),
+  S(3,"AB-1, AB-2 and the Cook collect the oil with absorbent pads, sawdust and scoops; the Oiler rigs the portable pump into empty drums/tank; deck cleaned. No chemicals or oil washed overboard.","AB-1, AB-2 ve Aşçı yağı emici ped, talaş ve kürekle toplar; Yağcı portatif pompayı boş varillere/tanka bağlar; güverte temizlenir. Denize kimyasal veya yağ atılmaz."),
+  S(1,"2/O checks the hull and water surface: no oil overboard.","2. Zabit borda ve deniz yüzeyini kontrol eder: denize yağ geçmemiştir."),
+  S(1,"Master SIMULATES reports per SOPEP: port/coastal state, DPA and P&I. C/E reviews the Oil Record Book entry.","Kaptan SOPEP'e göre raporları CANLANDIRIR: liman/kıyı devleti, DPA ve P&I. Başmühendis Yağ Kayıt Defteri kaydını gözden geçirir."),
+  S(1,"Master orders stand down: oily waste stored in labelled drums, SOPEP locker replenished. Debrief held with all 8 crew.","Kaptan talimi bitirir: yağlı atıklar etiketli varillerde saklanır, SOPEP dolabı tamamlanır. 8 personelle değerlendirme yapılır.")],
+ duties:DU({
+  MS:["Overall command, SOPEP reporting (simulated)","Genel komuta, SOPEP raporlaması (canlandırma)"],
+  CO:["SOPEP team leader on scene","Olay yerinde SOPEP ekibi lideri"],
+  O2:["Bridge communication, hull and water surface check, times recorded","Köprüüstü haberleşmesi, borda ve deniz yüzeyi kontrolü, saatlerin kaydı"],
+  CE:["Stops transfer, isolates source, Oil Record Book","Transferi durdurur, kaynağı izole eder, Yağ Kayıt Defteri"],
+  OL:["Pumps and valves, portable pump","Pompalar ve valfler, portatif pompa"],
+  AB1:["Scupper plugs, containment, clean-up","Frengi tapaları, çevreleme, temizlik"],
+  AB2:["Absorbent booms, containment, clean-up","Emici bariyerler, çevreleme, temizlik"],
+  CK:["Clean-up, absorbents, waste drums","Temizlik, emiciler, atık varilleri"]}),
  equip:T("SOPEP locker: absorbent pads and booms, sawdust, scoops, shovels, portable pump, empty drums, scupper plugs, chemical suits, gloves, goggles, UHF radios.","SOPEP dolabı: emici ped ve bariyerler, talaş, kepçe, kürek, portatif pompa, boş variller, frengi tapaları, kimyasal elbiseler, eldiven, gözlük, UHF telsizler.")}}
 
+/* ---------------- DAVIT LIFERAFT ---------------- */
 const DAVIT_SC=[
  T("Starboard davit-launched liferaft; focus on the automatic release hook.","Sancak davitli can salı; odak: otomatik açılır kanca."),
  T("Port davit-launched liferaft; focus on bowsing and tricing lines.","İskele davitli can salı; odak: bowsing ve tricing halatları."),
  T("Night conditions; focus on deck illumination and communication.","Gece şartları; odak: güverte aydınlatması ve haberleşme."),
  T("Vessel listed 10°; focus on swinging out against the list.","Gemi 10° meyilli; odak: meyile karşı salı dışarı alma."),
- T("New crew members practise each station role.","Yeni personel her görev rolünü tatbik eder."),
+ T("Each crew member practises each station role in turn.","Her personel sırayla her görev rolünü tatbik eder."),
  T("Power failure; focus on manual operation and recovering the davit wire.","Elektrik kesintisi; odak: manuel çalıştırma ve davit telini geri sarma.")];
 function buildDavit(c){const s=pick(DAVIT_SC,c.k);return{
  scen:T(`Davit-launched liferaft training. ${s.en}`,`Davitli can salı eğitimi. ${s.tr}`),
  steps:[
-  S(1,"Crew muster at the davit-launched liferaft station with lifejackets; briefing on posted launching instructions.","Personel can yelekleriyle davitli can salı istasyonunda toplanır; asılı indirme talimatı anlatılır."),
-  S(1,"Davit, winch brake, release hook, bowsing lines and embarkation area inspected.","Davit, vinç freni, açılır kanca, bowsing halatları ve biniş alanı kontrol edilir."),
-  S(2,"Demonstration: liferaft container attached to the davit hook, painter secured, raft swung outboard (inflation simulated unless a training raft is used).","Gösterim: can salı konteyneri davit kancasına takılır, pruva halatı bağlanır, sal dışarı alınır (eğitim salı yoksa şişirme canlandırılır)."),
-  S(2,"Embarkation procedure explained: boarding order, weight distribution, release of bowsing lines.","Biniş prosedürü anlatılır: biniş sırası, ağırlık dağılımı, bowsing halatlarının çözülmesi."),
-  S(2,"Lowering procedure: brake lever operation, arming the automatic release hook just before water entry, release.","İndirme prosedürü: fren kolu kullanımı, suya değmeden hemen önce otomatik kancanın kurulması, açma."),
+  S(1,"All 8 crew muster at the davit-launched liferaft station with lifejackets; C/O gives a briefing on the posted launching instructions.","8 personelin tamamı can yelekleriyle davitli can salı istasyonunda toplanır; 2. Kaptan asılı indirme talimatını anlatır."),
+  S(1,"C/O and AB-1 inspect the davit, winch brake, release hook, bowsing lines and embarkation area.","2. Kaptan ve AB-1 davit, vinç freni, açılır kanca, bowsing halatları ve biniş alanını kontrol eder."),
+  S(2,"Demonstration by AB-1 and AB-2: liferaft container attached to the davit hook, painter secured, raft swung outboard (inflation simulated unless a training raft is used).","AB-1 ve AB-2 tarafından gösterim: can salı konteyneri davit kancasına takılır, pruva halatı bağlanır, sal dışarı alınır (eğitim salı yoksa şişirme canlandırılır)."),
+  S(2,"C/O explains embarkation for all 8 persons: boarding order, weight distribution, release of bowsing lines by the Oiler.","2. Kaptan 8 kişilik biniş prosedürünü anlatır: biniş sırası, ağırlık dağılımı, bowsing halatlarının Yağcı tarafından çözülmesi."),
+  S(2,"Lowering procedure shown by AB-2 with the C/E: brake lever operation, arming the automatic release hook just before water entry, release.","İndirme prosedürünü AB-2 Başmühendisle birlikte gösterir: fren kolu kullanımı, suya değmeden hemen önce otomatik kancanın kurulması, açma."),
   S(2,s.en,s.tr),
-  S(1,"Stand down: davit and raft resecured, hook reset. Training recorded (SOLAS III/19.3.4.3, every 4 months).","Talim sonu: davit ve sal yerine emniyete alınır, kanca kurulur. Eğitim kaydedilir (SOLAS III/19.3.4.3, 4 ayda bir).")],
+  S(1,"Stand down: davit and raft resecured, hook reset. 2/O records the training (SOLAS III/19.3.4.3, every 4 months).","Talim sonu: davit ve sal yerine emniyete alınır, kanca kurulur. 2. Zabit eğitimi kaydeder (SOLAS III/19.3.4.3, 4 ayda bir).")],
+ duties:DU({
+  MS:["Overall supervision from the bridge","Köprüüstünden genel gözetim"],
+  CO:["Instructor, in charge of the station","Eğitmen, istasyon sorumlusu"],
+  O2:["Records training, timekeeping, communications","Eğitim kaydı, süre tutma, haberleşme"],
+  CE:["Davit winch power and brake","Davit vinci gücü ve fren"],
+  OL:["Bowsing and tricing lines","Bowsing ve tricing halatları"],
+  AB1:["Attaches raft, painter, swing-out","Salı takar, pruva halatı, dışarı alma"],
+  AB2:["Brake lever, release hook","Fren kolu, açılır kanca"],
+  CK:["Participant, embarkation practice","Katılımcı, biniş uygulaması"]}),
  equip:T("Davit-launched liferaft, davit and winch, release hook, bowsing/tricing lines, lifejackets, UHF radios, deck lighting.","Davitli can salı, davit ve vinç, açılır kanca, bowsing/tricing halatları, can yelekleri, UHF telsizler, güverte aydınlatması.")}}
 
+/* ---------------- ENCLOSED SPACE ---------------- */
 const ENC_SC=[
- {sp:T("No.3 Port water ballast tank","3 No.lu iskele balast tankı"),h:T("oxygen deficiency due to rusting","paslanma nedeniyle oksijen eksikliği")},
- {sp:T("No.4 Cargo Hold bottom (coal residue)","4 No.lu ambar dibi (kömür kalıntısı)"),h:T("oxygen depletion and CO/methane from cargo","yükten kaynaklanan oksijen azalması ve CO/metan")},
- {sp:T("Duct keel / pipe tunnel","Boru tüneli (duct keel)"),h:T("fall with head injury","düşme ve kafa yaralanması")},
- {sp:T("Starboard chain locker","Sancak zincirlik"),h:T("fall from ladder, leg injury","merdivenden düşme, bacak yaralanması")},
- {sp:T("Cofferdam forward of the engine room","Makine dairesi önündeki koferdam"),h:T("fuel vapour, dizziness","yakıt buharı, baş dönmesi")},
- {sp:T("Sewage holding tank","Pis su tankı"),h:T("H2S exposure","H2S maruziyeti")}];
-function buildEnc(c){const e=pick(ENC_SC,c.k);return{
- scen:T(`Crew member collapses inside ${e.sp.en}: ${e.h.en}.`,`Bir personel ${e.sp.tr} içinde yığılır: ${e.h.tr}.`),
+ {sp:T("No.3 Port water ballast tank","3 No.lu iskele balast tankı"),h:T("oxygen deficiency due to rusting","paslanma nedeniyle oksijen eksikliği"),ent:"AB1",att:"AB2"},
+ {sp:T("No.4 Cargo Hold bottom (coal residue)","4 No.lu ambar dibi (kömür kalıntısı)"),h:T("oxygen depletion and CO/methane from cargo","yükten kaynaklanan oksijen azalması ve CO/metan"),ent:"AB2",att:"AB1"},
+ {sp:T("Duct keel / pipe tunnel","Boru tüneli (duct keel)"),h:T("fall with head injury","düşme ve kafa yaralanması"),ent:"OL",att:"AB1"},
+ {sp:T("Starboard chain locker","Sancak zincirlik"),h:T("fall from ladder, leg injury","merdivenden düşme, bacak yaralanması"),ent:"AB1",att:"AB2"},
+ {sp:T("Cofferdam forward of the engine room","Makine dairesi önündeki koferdam"),h:T("fuel vapour, dizziness","yakıt buharı, baş dönmesi"),ent:"OL",att:"AB2"},
+ {sp:T("Sewage holding tank","Pis su tankı"),h:T("H2S exposure","H2S maruziyeti"),ent:"OL",att:"AB1"}];
+function buildEnc(c){const e=pick(ENC_SC,c.k);
+ const resc=["AB1","AB2","OL","O2"].filter(k=>k!==e.ent&&k!==e.att).slice(0,2);
+ const E=CREW[e.ent],A=CREW[e.att],R1=CREW[resc[0]],R2=CREW[resc[1]];
+ const D={MS:["Bridge, alarm, PA and radio medical advice","Köprüüstü, alarm, anons ve telsizle tıbbi danışma"],
+  CO:["Rescue team leader: gas test, BA control board","Kurtarma ekibi lideri: gaz ölçümü, SCBA kontrol panosu"],
+  CE:["Forced ventilation, tripod and rescue hoist","Cebri havalandırma, tripod ve kurtarma vinci"],
+  CK:["First aid with oxygen resuscitator, stretcher","Oksijen resüsitatörü ile ilk yardım, sedye"],
+  O2:["Communications and times recorded","Haberleşme ve saatlerin kaydı"],
+  AB1:["Muster, stand-by","Toplanma, hazırda"],AB2:["Muster, stand-by","Toplanma, hazırda"],OL:["Muster, stand-by","Toplanma, hazırda"]};
+ D[e.ent]=["Casualty (role play, dummy used for the lift)","Kazazede (canlandırma, kaldırmada manken kullanılır)"];
+ D[e.att]=["Attendant at the entrance: does not enter, raises the alarm, assists hoist","Girişte gözcü: içeri girmez, alarm verir, vince yardım eder"];
+ resc.forEach(k=>D[k]=["Rescuer with SCBA and lifeline","SCBA ve can halatlı kurtarıcı"]);
+ return{
+ scen:T(`${E.en} collapses inside ${e.sp.en}: ${e.h.en}.`,`${E.tr}, ${e.sp.tr} içinde yığılır: ${e.h.tr}.`),
  steps:[
-  S(1,`Entry into ${e.sp.en} under permit, atmosphere tested, attendant at the entrance. The entrant stops responding (${e.h.en}).`,`${e.sp.tr} içine izinle giriş yapılmış, atmosfer ölçülmüş, girişte gözcü var. İçerideki personel cevap vermez (${e.h.tr}).`),
-  S(1,"Attendant does NOT enter; raises the alarm by radio to the bridge.","Gözcü İÇERİ GİRMEZ; telsizle köprüüstüne alarm verir."),
-  S(1,`Bridge sounds the alarm, PA: "Enclosed space rescue at ${e.sp.en}. This is a drill." Rescue team musters with rescue equipment.`,`Köprüüstü alarm verir, anons: "${e.sp.tr} kapalı mahal kurtarma. Bu bir talimdir." Kurtarma ekibi ekipmanla toplanır.`),
-  S(2,"Team leader assesses; atmosphere tested at the entrance (O2 20.9%, LEL, H2S, CO); forced ventilation started.","Ekip lideri durumu değerlendirir; girişte atmosfer ölçülür (O2 %20,9, LEL, H2S, CO); cebri havalandırma başlatılır."),
-  S(2,"Two rescuers don SCBA with lifelines; entry times on BA control board; communication checked; rescuers enter.","İki kurtarıcı can halatlı SCBA giyer; giriş saatleri SCBA panosuna yazılır; haberleşme kontrol edilir; kurtarıcılar girer."),
-  S(3,"Casualty reached, airway and breathing checked, EEBD fitted; placed in rescue stretcher (Neil Robertson) and lifted out with tripod/rescue hoist.","Kazazedeye ulaşılır, hava yolu ve solunum kontrol edilir, EEBD takılır; kurtarma sedyesine (Neil Robertson) konup tripod/kurtarma vinci ile dışarı alınır."),
-  S(2,"First aid: oxygen resuscitator, recovery position, CPR if required; radio medical advice simulated.","İlk yardım: oksijen resüsitatörü, koma pozisyonu, gerekirse CPR; telsizle tıbbi danışma canlandırılır."),
-  S(1,"Space secured, permit cancelled. Debrief: why the attendant must never enter. Drill recorded (SOLAS III/19.3.6, every 2 months).","Mahal emniyete alınır, izin iptal edilir. Değerlendirme: gözcünün neden asla girmemesi gerektiği. Talim kaydedilir (SOLAS III/19.3.6, 2 ayda bir).")],
- equip:T("Gas detector, SCBA x2 with lifelines, EEBD, tripod and rescue hoist, Neil Robertson stretcher, portable ventilation fan, oxygen resuscitator, UHF radios, entry permit.","Gaz ölçer, 2 can halatlı SCBA, EEBD, tripod ve kurtarma vinci, Neil Robertson sedye, portatif havalandırma fanı, oksijen resüsitatörü, UHF telsizler, giriş izni.")}}
+  S(1,`${E.en} enters ${e.sp.en} under permit, atmosphere tested, ${A.en} as attendant at the entrance. ${E.en} stops responding (${e.h.en}). A dummy replaces the casualty for the rescue.`,`${E.tr} izinle ${e.sp.tr} içine girmiş, atmosfer ölçülmüş, girişte gözcü ${A.tr}. İçerideki personel cevap vermez (${e.h.tr}). Kurtarmada kazazedenin yerine manken kullanılır.`),
+  S(1,`${A.en} does NOT enter; raises the alarm by radio to the bridge.`,`Gözcü ${A.tr} İÇERİ GİRMEZ; telsizle köprüüstüne alarm verir.`),
+  S(1,`Master sounds the alarm, PA: "Enclosed space rescue at ${e.sp.en}. This is a drill." Rescue team musters with rescue equipment.`,`Kaptan alarm verir, anons: "${e.sp.tr} kapalı mahal kurtarma. Bu bir talimdir." Kurtarma ekibi ekipmanla toplanır.`),
+  S(2,"C/O (team leader) assesses and tests the atmosphere at the entrance (O2 20.9%, LEL, H2S, CO); C/E starts forced ventilation and rigs the tripod.","2. Kaptan (ekip lideri) durumu değerlendirir ve girişte atmosferi ölçer (O2 %20,9, LEL, H2S, CO); Başmühendis cebri havalandırmayı başlatır ve tripodu kurar."),
+  S(2,`${R1.en} and ${R2.en} don SCBA with lifelines; C/O records entry times on the BA control board; communication checked; rescuers enter.`,`${R1.tr} ve ${R2.tr} can halatlı SCBA giyer; 2. Kaptan giriş saatlerini SCBA panosuna yazar; haberleşme kontrol edilir; kurtarıcılar girer.`),
+  S(3,`Casualty reached, airway and breathing checked, EEBD fitted; placed in the rescue stretcher (Neil Robertson) and lifted out with the tripod/rescue hoist by the C/E and ${A.en}.`,`Kazazedeye ulaşılır, hava yolu ve solunum kontrol edilir, EEBD takılır; kurtarma sedyesine (Neil Robertson) konup Başmühendis ve ${A.tr} tarafından tripod/kurtarma vinci ile dışarı alınır.`),
+  S(2,"Cook gives first aid: oxygen resuscitator, recovery position, CPR if required; 2/O records times; Master simulates radio medical advice.","Aşçı ilk yardım uygular: oksijen resüsitatörü, koma pozisyonu, gerekirse CPR; 2. Zabit saatleri kaydeder; Kaptan telsizle tıbbi danışmayı canlandırır."),
+  S(1,"Space secured, permit cancelled. Debrief with all 8 crew: why the attendant must never enter. Drill recorded (SOLAS III/19.3.6, every 2 months).","Mahal emniyete alınır, izin iptal edilir. 8 personelle değerlendirme: gözcünün neden asla girmemesi gerektiği. Talim kaydedilir (SOLAS III/19.3.6, 2 ayda bir).")],
+ duties:DU(D),
+ equip:T("Gas detector, 2 SCBA with lifelines, EEBD, tripod and rescue hoist, Neil Robertson stretcher, portable ventilation fan, oxygen resuscitator, UHF radios, entry permit, rescue dummy.","Gaz ölçer, 2 can halatlı SCBA, EEBD, tripod ve kurtarma vinci, Neil Robertson sedye, portatif havalandırma fanı, oksijen resüsitatörü, UHF telsizler, giriş izni, manken.")}}
 
+/* ---------------- GROUNDING ---------------- */
 const GR_SC=[
  T("Vessel grounds on a sandbank at night during coastal passage.","Gemi gece kıyı seyrinde kum sığlığına oturur."),
  T("Vessel touches a rocky shoal in pilotage waters; double bottom damage suspected.","Gemi kılavuzluk sularında kayalık sığlığa değer; çift dip hasarından şüphelenilir."),
  T("Anchor drags in a storm and the vessel grounds near the shore.","Fırtınada demir tarar ve gemi kıyıya yakın oturur."),
  T("Vessel grounds in a channel after steering failure.","Dümen arızası sonrası gemi kanalda karaya oturur.")];
+const DMG_DUTIES=DU({
+  MS:["Overall command, reports (simulated)","Genel komuta, raporlar (canlandırma)"],
+  CO:["Soundings, damage assessment, stability calculation","İskandil, hasar tespiti, stabilite hesabı"],
+  O2:["Position, VDR save, VHF Sécurité (simulated), log","Mevki, VDR kaydı, VHF Sécurité (canlandırma), kayıt"],
+  CE:["Watertight doors, engine room checks","Su geçirmez kapılar, makine dairesi kontrolü"],
+  OL:["Engine room checks, bilge pumps","Makine dairesi kontrolü, sintine pompaları"],
+  AB1:["Tank soundings with the C/O","2. Kaptanla tank iskandili"],
+  AB2:["Signals, hand lead depths, pollution check","İşaretler, el iskandili ile derinlik, kirlilik kontrolü"],
+  CK:["First aid kit, pollution check, stand-by","İlk yardım çantası, kirlilik kontrolü, hazırda"]});
 function buildGround(c){const s=pick(GR_SC,c.k);return{scen:s,steps:[
   S(1,`Event: ${s.en}`,`Olay: ${s.tr}`),
-  S(1,"Engine stopped; general emergency alarm and PA; Master on bridge; time and position recorded, VDR data saved.","Makine stop; genel acil durum alarmı ve anons; Kaptan köprüüstünde; saat ve mevki kaydedilir, VDR verisi kaydedilir."),
-  S(1,"Aground signals displayed (anchor lights + 2 all-round red / 3 black balls); sound signals as per COLREG; Sécurité on VHF simulated.","Karaya oturmuş gemi işaretleri verilir (demir fenerleri + 2 kırmızı fener / 3 siyah top); COLREG'e göre ses işaretleri; VHF Sécurité canlandırılır."),
-  S(1,"Watertight doors closed; crew mustered, headcount reported.","Su geçirmez kapılar kapatılır; personel toplanır, sayım bildirilir."),
-  S(3,"Damage assessment: soundings of all tanks, bilges and void spaces compared with last records; ER checked; depths around the hull taken with hand lead.","Hasar tespiti: tüm tank, sintine ve boş mahaller iskandil edilip son kayıtlarla karşılaştırılır; makine dairesi kontrol edilir; gemi etrafında el iskandili ile derinlik alınır."),
-  S(1,"Water around the hull checked for pollution; SOPEP team on standby.","Gemi etrafında kirlilik kontrolü yapılır; SOPEP ekibi hazırda."),
-  S(2,"C/O calculates stability and hull stress with the loading computer. Refloating not attempted before assessment and consultation with company/DPA; tide information obtained.","2. Kaptan yükleme bilgisayarıyla stabilite ve gövde gerilmelerini hesaplar. Değerlendirme ve şirket/DPA ile görüşmeden önce yüzdürme denenmez; gelgit bilgisi alınır."),
-  S(1,"Reports simulated: DPA, coastal state, MRCC if needed.","Raporlar canlandırılır: DPA, kıyı devleti, gerekirse MRCC."),
-  S(1,"Stand down and debrief.","Talim sonu ve değerlendirme.")],
+  S(1,"Master stops the engine; general emergency alarm and PA; 2/O records time and position and saves VDR data.","Kaptan makineyi durdurur; genel acil durum alarmı ve anons; 2. Zabit saat ve mevkii kaydeder, VDR verisini kaydeder."),
+  S(1,"AB-2 displays aground signals (anchor lights + 2 all-round red / 3 black balls); sound signals as per COLREG; 2/O sends Sécurité on VHF (simulated).","AB-2 karaya oturmuş gemi işaretlerini verir (demir fenerleri + 2 kırmızı fener / 3 siyah top); COLREG'e göre ses işaretleri; 2. Zabit VHF'te Sécurité yapar (canlandırma)."),
+  S(1,"C/E closes watertight doors; all 8 crew mustered, C/O reports the headcount.","Başmühendis su geçirmez kapıları kapatır; 8 personel toplanır, 2. Kaptan sayımı bildirir."),
+  S(3,"Damage assessment: C/O and AB-1 sound all tanks, bilges and void spaces and compare with the last records; C/E and the Oiler check the engine room; AB-2 takes depths around the hull with the hand lead.","Hasar tespiti: 2. Kaptan ve AB-1 tüm tank, sintine ve boş mahalleri iskandil edip son kayıtlarla karşılaştırır; Başmühendis ve Yağcı makine dairesini kontrol eder; AB-2 gemi etrafında el iskandili ile derinlik alır."),
+  S(1,"Cook checks the water around the hull for pollution; SOPEP equipment ready.","Aşçı gemi etrafında kirlilik kontrolü yapar; SOPEP malzemeleri hazır."),
+  S(2,"C/O calculates stability and hull stress with the loading computer. Refloating not attempted before assessment and consultation with the company/DPA; tide information obtained.","2. Kaptan yükleme bilgisayarıyla stabilite ve gövde gerilmelerini hesaplar. Değerlendirme ve şirket/DPA ile görüşmeden önce yüzdürme denenmez; gelgit bilgisi alınır."),
+  S(1,"Master SIMULATES reports: DPA, coastal state, MRCC if needed.","Kaptan raporları CANLANDIRIR: DPA, kıyı devleti, gerekirse MRCC."),
+  S(1,"Master orders stand down; debrief with all 8 crew.","Kaptan talimi bitirir; 8 personelle değerlendirme yapılır.")],
+ duties:DMG_DUTIES,
  equip:T("Sounding tapes, hand lead, loading computer, damage control equipment, VDR, signal shapes and lights, VHF/UHF radios, SOPEP equipment.","İskandil şeritleri, el iskandili, yükleme bilgisayarı, hasar kontrol malzemeleri, VDR, işaret topları ve fenerler, VHF/UHF telsizler, SOPEP malzemeleri.")}}
 
+/* ---------------- FLOODING ---------------- */
 const FL_SC=[
  T("Engine room flooding from a fractured sea water cooling pipe.","Kırılan deniz suyu soğutma borusundan makine dairesine su girişi."),
  T("Water ingress alarm in No.1 Cargo Hold.","1 No.lu ambarda su girişi alarmı."),
@@ -399,15 +516,25 @@ const FL_SC=[
  T("Steering gear room flooding through stern tube seal failure.","Şaft kovanı sızdırmazlık arızası ile dümen dairesine su girişi.")];
 function buildFlood(c){const s=pick(FL_SC,c.k);return{scen:s,steps:[
   S(1,`Bilge / water ingress alarm: ${s.en}`,`Sintine / su girişi alarmı: ${s.tr}`),
-  S(1,"Investigation team confirms flooding; general alarm and PA; Master and C/E informed.","İnceleme ekibi su almayı teyit eder; genel alarm ve anons; Kaptan ve Başmühendis bilgilendirilir."),
-  S(1,"Watertight doors closed; crew mustered, headcount reported.","Su geçirmez kapılar kapatılır; personel toplanır, sayım bildirilir."),
-  S(2,"Source isolated by closing valves; bilge pumps and emergency bilge suction started; water level monitored.","Valfler kapatılarak kaynak izole edilir; sintine pompaları ve acil sintine emişi çalıştırılır; su seviyesi takip edilir."),
-  S(2,"Damage control: wooden plugs, wedges, pipe clamps and cement box applied (simulated).","Hasar kontrol: ahşap tıpalar, takozlar, boru kelepçeleri ve çimento kasası uygulanır (canlandırma)."),
-  S(2,"C/O checks stability with the loading computer (list, trim, free surface); ballast adjustment considered.","2. Kaptan yükleme bilgisayarıyla stabiliteyi kontrol eder (meyil, trim, serbest yüzey); balast düzeltmesi değerlendirilir."),
-  S(1,"Reports to company/DPA simulated; abandon ship preparations considered if not controlled.","Şirket/DPA'ya raporlar canlandırılır; kontrol edilemezse terk hazırlığı değerlendirilir."),
-  S(1,"Stand down and debrief.","Talim sonu ve değerlendirme.")],
+  S(1,"C/E and the Oiler investigate and confirm flooding; Master sounds the general alarm, PA made.","Başmühendis ve Yağcı inceleyip su almayı teyit eder; Kaptan genel alarmı çalar, anons yapılır."),
+  S(1,"Watertight doors closed; all 8 crew mustered, C/O reports the headcount; Cook prepares first aid kit and stands by.","Su geçirmez kapılar kapatılır; 8 personel toplanır, 2. Kaptan sayımı bildirir; Aşçı ilk yardım çantasını hazırlayıp bekler."),
+  S(2,"C/E isolates the source by closing valves; the Oiler starts bilge pumps and the emergency bilge suction; water level monitored.","Başmühendis valfleri kapatarak kaynağı izole eder; Yağcı sintine pompalarını ve acil sintine emişini çalıştırır; su seviyesi takip edilir."),
+  S(2,"Damage control team (C/O, AB-1, AB-2) applies wooden plugs, wedges, pipe clamps and cement box (simulated).","Hasar kontrol ekibi (2. Kaptan, AB-1, AB-2) ahşap tıpa, takoz, boru kelepçesi ve çimento kasası uygular (canlandırma)."),
+  S(2,"C/O checks stability with the loading computer (list, trim, free surface); ballast adjustment considered with the Master.","2. Kaptan yükleme bilgisayarıyla stabiliteyi kontrol eder (meyil, trim, serbest yüzey); Kaptanla balast düzeltmesi değerlendirilir."),
+  S(1,"Master SIMULATES reports to the company/DPA; 2/O prepares survival craft equipment in case abandoning becomes necessary.","Kaptan şirket/DPA'ya raporları CANLANDIRIR; 2. Zabit terk gerekirse diye can kurtarma ekipmanını hazırlar."),
+  S(1,"Master orders stand down; debrief with all 8 crew.","Kaptan talimi bitirir; 8 personelle değerlendirme yapılır.")],
+ duties:DU({
+  MS:["Overall command, alarm, reports (simulated)","Genel komuta, alarm, raporlar (canlandırma)"],
+  CO:["Damage control team leader, stability","Hasar kontrol ekibi lideri, stabilite"],
+  O2:["Communications, survival craft readiness","Haberleşme, can kurtarma aracı hazırlığı"],
+  CE:["Investigation, valve isolation","İnceleme, valf izolasyonu"],
+  OL:["Bilge pumps and emergency bilge suction","Sintine pompaları ve acil sintine emişi"],
+  AB1:["Damage control: plugs, wedges, clamps","Hasar kontrol: tıpa, takoz, kelepçe"],
+  AB2:["Damage control: cement box, soundings","Hasar kontrol: çimento kasası, iskandil"],
+  CK:["First aid and stand-by","İlk yardım ve hazırda bekleme"]}),
  equip:T("Bilge and emergency bilge pumps, damage control kit (plugs, wedges, clamps, cement box), sounding tapes, loading computer, UHF radios.","Sintine ve acil sintine pompaları, hasar kontrol seti (tıpa, takoz, kelepçe, çimento kasası), iskandil şeritleri, yükleme bilgisayarı, UHF telsizler.")}}
 
+/* ---------------- COLLISION ---------------- */
 const COL_SC=[
  T("Collision with a fishing vessel on the starboard side in restricted visibility.","Kısıtlı görüşte sancak bordada bir balıkçı teknesiyle çatışma."),
  T("A crossing vessel strikes the port side at No.2 Hold.","Kesişen bir gemi 2 No.lu ambar hizasında iskele bordaya çarpar."),
@@ -415,15 +542,25 @@ const COL_SC=[
  T("Bow collision in a TSS, damage to the fore peak.","Trafik ayırım düzeninde baştan çatışma, baş pik hasarı.")];
 function buildCol(c){const s=pick(COL_SC,c.k);return{scen:s,steps:[
   S(1,`Event: ${s.en}`,`Olay: ${s.tr}`),
-  S(1,"Engines stopped, general alarm and PA; Master on bridge; VDR data saved; watertight doors closed.","Makineler stop, genel alarm ve anons; Kaptan köprüüstünde; VDR verisi kaydedilir; su geçirmez kapılar kapatılır."),
-  S(1,"Crew mustered, headcount; injured persons checked.","Personel toplanır, sayım yapılır; yaralı olup olmadığı kontrol edilir."),
-  S(3,"Damage assessment: soundings in the damaged area, check for flooding, fire and pollution.","Hasar tespiti: hasarlı bölgede iskandil, su alma, yangın ve kirlilik kontrolü."),
-  S(2,"Contact with the other vessel on VHF; assistance offered (SOLAS V/33); ship particulars exchanged.","Diğer gemiyle VHF'te temas; yardım teklif edilir (SOLAS V/33); gemi bilgileri karşılıklı verilir."),
-  S(2,"Stability checked by C/O; navigational warning and appropriate signals displayed.","2. Kaptan stabiliteyi kontrol eder; seyir uyarısı yapılır ve uygun işaretler verilir."),
-  S(1,"Reports simulated: DPA, flag state, MRCC/coastal state.","Raporlar canlandırılır: DPA, bayrak devleti, MRCC/kıyı devleti."),
-  S(1,"Stand down and debrief.","Talim sonu ve değerlendirme.")],
+  S(1,"Master stops the engines, general alarm and PA; 2/O saves VDR data; C/E closes watertight doors.","Kaptan makineleri durdurur, genel alarm ve anons; 2. Zabit VDR verisini kaydeder; Başmühendis su geçirmez kapıları kapatır."),
+  S(1,"All 8 crew mustered, C/O reports the headcount; Cook checks for injured persons with the first aid kit.","8 personel toplanır, 2. Kaptan sayımı bildirir; Aşçı ilk yardım çantasıyla yaralı olup olmadığını kontrol eder."),
+  S(3,"Damage assessment: C/O, AB-1 and AB-2 sound the tanks in the damaged area; C/E and the Oiler check the engine room for flooding; fire and pollution checked.","Hasar tespiti: 2. Kaptan, AB-1 ve AB-2 hasarlı bölgedeki tankları iskandil eder; Başmühendis ve Yağcı makine dairesinde su alma kontrolü yapar; yangın ve kirlilik kontrol edilir."),
+  S(2,"2/O contacts the other vessel on VHF under the Master's direction; assistance offered (SOLAS V/33); ship particulars exchanged.","2. Zabit Kaptanın talimatıyla diğer gemiyle VHF'te temas kurar; yardım teklif edilir (SOLAS V/33); gemi bilgileri karşılıklı verilir."),
+  S(2,"C/O checks stability; AB-2 displays the appropriate signals; navigational warning (simulated).","2. Kaptan stabiliteyi kontrol eder; AB-2 uygun işaretleri verir; seyir uyarısı (canlandırma)."),
+  S(1,"Master SIMULATES reports: DPA, flag state, MRCC/coastal state.","Kaptan raporları CANLANDIRIR: DPA, bayrak devleti, MRCC/kıyı devleti."),
+  S(1,"Master orders stand down; debrief with all 8 crew.","Kaptan talimi bitirir; 8 personelle değerlendirme yapılır.")],
+ duties:DU({
+  MS:["Overall command, stops engines, reports (simulated)","Genel komuta, makineleri durdurur, raporlar (canlandırma)"],
+  CO:["Headcount, damage assessment, stability","Sayım, hasar tespiti, stabilite"],
+  O2:["VDR save, VHF contact with the other vessel","VDR kaydı, diğer gemiyle VHF teması"],
+  CE:["Watertight doors, engine room flooding check","Su geçirmez kapılar, makine dairesi su alma kontrolü"],
+  OL:["Engine room checks, bilge pumps","Makine dairesi kontrolü, sintine pompaları"],
+  AB1:["Soundings in the damaged area","Hasarlı bölgede iskandil"],
+  AB2:["Soundings, signals","İskandil, işaretler"],
+  CK:["Injured persons check, first aid","Yaralı kontrolü, ilk yardım"]}),
  equip:T("VDR, sounding tapes, damage control kit, loading computer, VHF/UHF radios, SOPEP equipment, first aid kit.","VDR, iskandil şeritleri, hasar kontrol seti, yükleme bilgisayarı, VHF/UHF telsizler, SOPEP malzemeleri, ilk yardım çantası.")}}
 
+/* ---------------- M/E & POWER ---------------- */
 const ME_SC=[
  T("Total blackout at sea after a generator trip.","Jeneratör atması sonrası denizde tam karartma (blackout)."),
  T("Main engine shutdown due to low lube oil pressure in coastal waters.","Kıyı sularında düşük yağlama yağı basıncı nedeniyle ana makine durması."),
@@ -431,12 +568,21 @@ const ME_SC=[
  T("Main engine fuel pump failure in a TSS.","Trafik ayırım düzeninde ana makine yakıt pompası arızası.")];
 function buildMe(c){const s=pick(ME_SC,c.k);return{scen:s,steps:[
   S(1,`Event: ${s.en}`,`Olay: ${s.tr}`),
-  S(1,"Emergency generator starts automatically and supplies the emergency switchboard (within 45 s); emergency lighting and bridge equipment confirmed.","Acil jeneratör otomatik devreye girer ve acil tabloyu besler (45 sn içinde); acil aydınlatma ve köprüüstü cihazları teyit edilir."),
-  S(1,"NUC signals displayed; Sécurité on VHF simulated; Master and C/E informed; forecastle party ready to anchor if depth allows.","NUC işaretleri verilir; VHF Sécurité canlandırılır; Kaptan ve Başmühendis bilgilendirilir; derinlik uygunsa baş kasara ekibi demirlemeye hazır."),
-  S(3,"Engine room: cause investigated, standby generator started and connected, main switchboard restored, preferential trip consumers restarted.","Makine dairesi: sebep araştırılır, yedek jeneratör çalıştırılıp paralele alınır, ana tablo beslenir, tercihli atmadaki tüketiciler yeniden çalıştırılır."),
-  S(2,"Main engine restarted, steering pumps checked, speed increased gradually.","Ana makine yeniden çalıştırılır, dümen pompaları kontrol edilir, hız kademeli artırılır."),
-  S(1,"NUC signals lowered, Sécurité cancelled.","NUC işaretleri indirilir, Sécurité iptal edilir."),
-  S(1,"Stand down, debrief; entries in deck and engine log books.","Talim sonu, değerlendirme; güverte ve makine jurnallerine kayıt.")],
+  S(1,"Emergency generator starts automatically and supplies the emergency switchboard (within 45 s); 2/O confirms emergency lighting and bridge equipment.","Acil jeneratör otomatik devreye girer ve acil tabloyu besler (45 sn içinde); 2. Zabit acil aydınlatma ve köprüüstü cihazlarını teyit eder."),
+  S(1,"Master on the bridge; AB-2 displays NUC signals; 2/O sends Sécurité on VHF (simulated); C/O and AB-1 go to the forecastle to stand by the anchors if depth allows.","Kaptan köprüüstünde; AB-2 NUC işaretlerini verir; 2. Zabit VHF'te Sécurité yapar (canlandırma); derinlik uygunsa 2. Kaptan ve AB-1 demirlere hazır olmak üzere baş kasaraya gider."),
+  S(3,"C/E and the Oiler investigate the cause, start and connect the standby generator, restore the main switchboard and restart the preferential trip consumers.","Başmühendis ve Yağcı sebebi araştırır, yedek jeneratörü çalıştırıp paralele alır, ana tabloyu besler ve tercihli atmadaki tüketicileri yeniden çalıştırır."),
+  S(2,"C/E restarts the main engine and checks the steering pumps; Master increases speed gradually.","Başmühendis ana makineyi yeniden çalıştırır ve dümen pompalarını kontrol eder; Kaptan hızı kademeli artırır."),
+  S(1,"NUC signals lowered, Sécurité cancelled; C/O and AB-1 return from the forecastle.","NUC işaretleri indirilir, Sécurité iptal edilir; 2. Kaptan ve AB-1 baş kasaradan döner."),
+  S(1,"Master orders stand down; debrief with all 8 crew; entries in deck and engine log books.","Kaptan talimi bitirir; 8 personelle değerlendirme; güverte ve makine jurnallerine kayıt.")],
+ duties:DU({
+  MS:["Command on the bridge, ship handling","Köprüüstünde komuta, gemi idaresi"],
+  CO:["Forecastle, anchors ready","Baş kasara, demirler hazır"],
+  O2:["Emergency lighting check, VHF Sécurité (simulated)","Acil aydınlatma kontrolü, VHF Sécurité (canlandırma)"],
+  CE:["Blackout recovery, M/E restart","Blackout sonrası toparlanma, ana makineyi yeniden çalıştırma"],
+  OL:["Standby generator, assists C/E","Yedek jeneratör, Başmühendise yardım"],
+  AB1:["Forecastle with the C/O","2. Kaptanla baş kasarada"],
+  AB2:["NUC signals, lookout","NUC işaretleri, gözcü"],
+  CK:["Muster station, messenger","Toplanma yeri, haberci"]}),
  equip:T("Emergency generator, emergency switchboard, NUC signals, VHF/UHF radios, anchoring equipment.","Acil jeneratör, acil tablo, NUC işaretleri, VHF/UHF telsizler, demirleme donanımı.")}}
 
 const DRILLS={
@@ -492,7 +638,7 @@ function buildTraining(idx,week){
     sub:T(`Week ${week} · Topic ${idx+1} of 26 · ${cyc?"Second cycle (weeks 27–52)":"First cycle (weeks 1–26)"}`,`Hafta ${week} · Konu ${idx+1}/26 · ${cyc?"İkinci tur (27–52. haftalar)":"Birinci tur (1–26. haftalar)"}`),
     scen:T(`Training on ${tp.t.en}.`,`${tp.t.tr} konulu eğitim.`),
     steps:[
-      S(1,`Opening: attendance sheet signed, objectives of "${tp.t.en}" explained.`,`Açılış: katılım listesi imzalanır, "${tp.t.tr}" eğitiminin amaçları anlatılır.`),
+      S(1,`Opening: all 8 crew attend (Master, C/O, 2/O, C/E, Oiler, AB-1, AB-2, Cook); attendance sheet signed, objectives of "${tp.t.en}" explained.`,`Açılış: 8 personelin tamamı katılır (Kaptan, 2. Kaptan, 2. Zabit, Başmühendis, Yağcı, AB-1, AB-2, Aşçı); katılım listesi imzalanır, "${tp.t.tr}" eğitiminin amaçları anlatılır.`),
       S(3.5,`Theory: ${pts}.`,`Teori: ${ptsT}.`),
       S(3,`Practical: ${d[0]}.`,`Uygulama: ${d[1]}.`),
       S(1.5,`Questions and assessment: ${q[0]}`,`Soru-cevap ve değerlendirme: ${q[1]}`),
@@ -567,7 +713,7 @@ function render(){
   const remarks=tab==="drill"
     ?T("Drill carried out satisfactorily. All crew participated and performed their duties as per muster list.","Talim başarıyla icra edildi. Tüm personel katıldı ve görev çizelgesine göre görevlerini yerine getirdi.")
     :T("Training completed. All participants attended and signed the attendance sheet.","Eğitim tamamlandı. Tüm katılımcılar hazır bulundu ve katılım listesini imzaladı.");
-  current={kind,title,sub:r.sub,scen:r.scen,steps,equip:r.equip,remarks,dateStr,
+  current={kind,title,duties:r.duties||null,sub:r.sub,scen:r.scen,steps,equip:r.equip,remarks,dateStr,
     time:`${fmt(start)}–${fmt(end)}`,dur,ship:$("ship").value.trim(),cond:$("cond").value.trim(),pos:$("pos").value.trim(),wx:$("wx").value.trim(),extra:$("extra").value.trim()};
   $("shipEyebrow").textContent=(current.ship?current.ship+" · ":"")+"ISM · SOLAS III/19";
 
@@ -576,11 +722,12 @@ function render(){
    <div class="rhead">
      <div class="eyebrow">${c.kind.en} / ${c.kind.tr}</div>
      <h2 class="rtitle">${esc(c.title.en)}<span>${esc(c.title.tr)}</span></h2>
-     <div class="meta"><span>Tarih <b>${c.dateStr}</b></span><span>Saat <b>${c.time}</b></span><span>Süre <b>${c.dur} dk</b></span>${c.ship?`<span>Gemi <b>${esc(c.ship)}</b></span>`:""}</div>
+     <div class="meta"><span>Tarih <b>${c.dateStr}</b></span><span>Saat <b>${c.time}</b></span><span>Süre <b>${c.dur} dk</b></span><span>Katılım <b>8/8</b></span>${c.ship?`<span>Gemi <b>${esc(c.ship)}</b></span>`:""}</div>
      <div class="meta"><span>${esc(c.sub.tr)}</span></div>
    </div>
    <div class="bi"><p><span class="lang">EN</span>${esc(c.scen.en)}</p><p><span class="lang">TR</span>${esc(c.scen.tr)}</p></div>
    <ol class="tl">${c.steps.map(s=>`<li><time>${s.time}</time><div><div class="en">${esc(s.en)}</div><div class="tr">${esc(s.tr)}</div></div></li>`).join("")}<li><time>${fmt(end)}</time><div><div class="en">${tab==="drill"?"Drill completed.":"Training completed."}</div><div class="tr">${tab==="drill"?"Talim tamamlandı.":"Eğitim tamamlandı."}</div></div></li></ol>
+   ${c.duties?`<div class="sectionlabel">Görev dağılımı · Duties</div><div class="duties">${c.duties.map(d=>`<div class="rk">${esc(CREW[d.k].en)}<small>${esc(CREW[d.k].tr)}</small></div><div class="dt">${esc(d.en)}<span>${esc(d.tr)}</span></div>`).join("")}</div>`:""}
    <div class="bi"><p><span class="lang">EQUIPMENT</span>${esc(c.equip.en)}</p><p><span class="lang">EKİPMAN</span>${esc(c.equip.tr)}</p></div>`;
 }
 
@@ -597,6 +744,7 @@ function buildText(lang){
   if(c.pos) out.push(`${L("Position","Mevki")}: ${c.pos}`);
   if(c.wx) out.push(`${L("Weather","Hava")}: ${c.wx}`);
   if(c.cond) out.push(`${L("Conducted by","Yöneten")}: ${c.cond}`);
+  out.push(`${L("Participants","Katılımcılar")}: 8/8 (Master, C/O, 2/O, C/E, Oiler, AB-1, AB-2, Cook)`);
   out.push("");
   out.push(L("SCENARIO","SENARYO")+":");
   if(E) out.push((B?"EN: ":"")+c.scen.en);
@@ -609,6 +757,13 @@ function buildText(lang){
     else out.push(`${s.time}  ${E?s.en:s.tr}`);
   });
   out.push("");
+  if(c.duties){
+    out.push(L("DUTIES","GÖREV DAĞILIMI")+":");
+    c.duties.forEach(d=>{const n=CREW[d.k];
+      if(B){out.push(`${n.en} / ${n.tr}: ${d.en}`);out.push(`   ${d.tr}`);}
+      else out.push(`${E?n.en:n.tr}: ${E?d.en:d.tr}`);});
+    out.push("");
+  }
   out.push(L("EQUIPMENT USED","KULLANILAN EKİPMAN")+":");
   if(E) out.push((B?"EN: ":"")+c.equip.en);
   if(R) out.push((B?"TR: ":"")+c.equip.tr);
@@ -640,6 +795,6 @@ $("cpBoth").onclick=()=>copy("both");$("cpEn").onclick=()=>copy("en");$("cpTr").
 render();
 </script>
 
-<script>if("serviceWorker" in navigator){addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}</script>
+<script>if("serviceWorker" in navigator){addEventListener("load",()=>navigator.serviceWorker.register("sw.js").then(r=>r.update()).catch(()=>{}))}</script>
 </body>
 </html>
