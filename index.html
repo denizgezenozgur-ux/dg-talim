@@ -86,6 +86,8 @@ details[open] summary{margin-bottom:12px}
 .duties .rk small{display:block;color:var(--muted);font-size:11px}
 .duties .dt{font-size:14px}
 .duties .dt span{display:block;color:var(--muted);font-size:13px}
+.bk{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px}
+.bk button{font:inherit;font-size:14px;padding:9px 12px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
 .crewline{font-size:13px;color:var(--muted)}
 .tl time{font-family:var(--f-mono);font-size:15px;color:var(--orange);font-variant-numeric:tabular-nums;padding-top:1px}
 .tl .en{font-weight:500}
@@ -126,6 +128,7 @@ details[open] summary{margin-bottom:12px}
         <label>Mevki<input id="pos" placeholder="40°58'N 028°50'E / Limanda"></label>
         <label>Hava / Deniz<input id="wx" placeholder="NW 4, deniz 3, açık"></label>
       </div>
+      <div class="bk"><button type="button" id="bkCopy">Bilgileri yedekle (kodu kopyala)</button><label>Yedek kodu yapıştır<input id="bkIn" placeholder="Yedek kodunu buraya yapıştır"></label><button type="button" id="bkLoad">Geri yükle</button></div>
       <p class="crewline">Personel (8): Master, C/O, 2/O, C/E, Oiler, AB-1, AB-2, Cook. Senaryolar ve görevler yalnızca bu kişilerle yazılır.</p>
     </details>
   </section>
@@ -666,7 +669,10 @@ let tab="drill", drillId="fire", areaOverride="auto", xm=false, topicOverride="a
 
 const today=new Date(); $("date").value=today.getFullYear()+"-"+pad(today.getMonth()+1)+"-"+pad(today.getDate());
 ["ship","cond","pos","wx"].forEach(k=>{const v=store.get("tp_"+k); if(v) $(k).value=v;});
-if(store.get("tp_ship")) $("shipDetails").open=false;
+$("shipDetails").open=!store.get("tp_ship");
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist().catch(()=>{})}catch(e){}
+function backupCode(){return btoa(unescape(encodeURIComponent(JSON.stringify(Object.fromEntries(["ship","cond","pos","wx"].map(k=>[k,$(k).value]))))))}
+function restoreCode(code){try{const o=JSON.parse(decodeURIComponent(escape(atob(code.trim()))));["ship","cond","pos","wx"].forEach(k=>{if(o[k]!=null){$(k).value=o[k];store.set("tp_"+k,o[k]);}});render();toast("Bilgiler geri yüklendi");}catch(e){toast("Kod okunamadı, tamamını yapıştır")}}
 
 $("drillSel").innerHTML=Object.entries(DRILLS).map(([k,d])=>`<option value="${k}">${d.tr} · ${d.en}</option>`).join("");
 $("topicSel").innerHTML=`<option value="auto">Otomatik (haftaya göre)</option>`+TOPICS.map((t,i)=>`<option value="${i}">${i+1}. ${t.t.tr}</option>`).join("");
@@ -791,6 +797,8 @@ $("drillOpts").onchange=e=>{if(e.target.id==="areaSel")areaOverride=e.target.val
 $("topicSel").onchange=e=>{topicOverride=e.target.value;render()};
 ["date","start","end","extra"].forEach(id=>$(id).addEventListener("input",render));
 ["ship","cond","pos","wx"].forEach(id=>$(id).addEventListener("input",()=>{store.set("tp_"+id,$(id).value);render()}));
+$("bkCopy").onclick=()=>{const t=backupCode();try{navigator.clipboard.writeText(t).then(()=>toast("Yedek kodu kopyalandı, not al veya kendine mesaj at"),()=>{$("bkIn").value=t;$("bkIn").select();toast("Kodu seçip kopyala")})}catch(e){$("bkIn").value=t;$("bkIn").select()}};
+$("bkLoad").onclick=()=>restoreCode($("bkIn").value);
 $("cpBoth").onclick=()=>copy("both");$("cpEn").onclick=()=>copy("en");$("cpTr").onclick=()=>copy("tr");
 render();
 </script>
