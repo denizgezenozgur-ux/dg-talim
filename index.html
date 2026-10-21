@@ -88,6 +88,8 @@ details[open] summary{margin-bottom:12px}
 .duties .dt span{display:block;color:var(--muted);font-size:13px}
 .bk{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px}
 .bk button{font:inherit;font-size:14px;padding:9px 12px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+.moved{border:2px solid var(--orange);background:var(--orange-soft);border-radius:8px;padding:12px 14px;font-size:14px;line-height:1.5}
+.moved a{color:var(--orange);font-weight:600;word-break:break-all}
 .crewline{font-size:13px;color:var(--muted)}
 .tl time{font-family:var(--f-mono);font-size:15px;color:var(--orange);font-variant-numeric:tabular-nums;padding-top:1px}
 .tl .en{font-weight:500}
@@ -102,6 +104,7 @@ details[open] summary{margin-bottom:12px}
 </style>
 
 <div class="wrap">
+  <div class="moved" id="moved" hidden><b>Uygulama taşındı.</b> Yeni adres: <a href="https://dg-talim.netlify.app" target="_blank" rel="noopener">dg-talim.netlify.app</a><br>1) Aşağıda "Gemi bilgileri"ni aç, <b>Bilgileri yedekle</b> ile kodu kopyala. 2) Yeni adresi aç, ana ekrana ekle, kodu <b>Geri yükle</b>. 3) Sonra bu eski ikonu sil.</div>
   <header>
     <div class="brand"><img src="icons/icon-192.png" alt="" width="44" height="44" id="logo"><div class="eyebrow" id="shipEyebrow">ISM · SOLAS III/19</div></div>
     <h1>Talim &amp; Eğitim Planlayıcı</h1>
@@ -669,7 +672,7 @@ let tab="drill", drillId="fire", areaOverride="auto", xm=false, topicOverride="a
 
 const today=new Date(); $("date").value=today.getFullYear()+"-"+pad(today.getMonth()+1)+"-"+pad(today.getDate());
 ["ship","cond","pos","wx"].forEach(k=>{const v=store.get("tp_"+k); if(v) $(k).value=v;});
-$("shipDetails").open=!store.get("tp_ship");
+if(/github\.io$/.test(location.hostname)){$("moved").hidden=false;$("shipDetails").open=true}else $("shipDetails").open=!store.get("tp_ship");
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist().catch(()=>{})}catch(e){}
 function backupCode(){return btoa(unescape(encodeURIComponent(JSON.stringify(Object.fromEntries(["ship","cond","pos","wx"].map(k=>[k,$(k).value]))))))}
 function restoreCode(code){try{const o=JSON.parse(decodeURIComponent(escape(atob(code.trim()))));["ship","cond","pos","wx"].forEach(k=>{if(o[k]!=null){$(k).value=o[k];store.set("tp_"+k,o[k]);}});render();toast("Bilgiler geri yüklendi");}catch(e){toast("Kod okunamadı, tamamını yapıştır")}}
